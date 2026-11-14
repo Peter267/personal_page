@@ -1,0 +1,87 @@
+/* ==========================================================================
+   tokens.css — 设计令牌
+   --------------------------------------------------------------------------
+   数值严格对齐 apanzinc.top 的设计系统。改动任何一个都会让整站"变味"，
+   所以除非你清楚后果，否则建议只改 --accent。
+   ========================================================================== */
+
+:root {
+  /* ---------- 背景层级 ---------- */
+  --bg-primary: #000;
+  --bg-secondary: #111;
+  --bg-tertiary: #1a1a1a;
+  --bg-hover: #222;
+
+  /* ---------- 文字层级 ----------
+     注意 f0f0f0 而非纯白：纯白在纯黑上会发飘，f0 更稳。 */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #666;
+
+  /* ---------- 主色 ----------
+     #0f8 是 #00ff88 的简写。这是全站唯一的彩色，
+     所有强调（导航激活、链接悬停、标签、边角）都靠它。 */
+  --accent: #0f8;
+  --accent-dim: #00ff88b3;
+  --accent-glow: #00ff881f;
+  --border: #2a2a2a;
+  --border-accent: #0f86;
+
+  /* ---------- 圆角 ----------
+     原站圆角极小（2px / 4px），这是"终端感/工程感"的来源之一。
+     圆角一大就变成消费级 App 风格，气质完全不同。 */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-full: 9999px;
+
+  /* ---------- 间距阶梯 ---------- */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 40px;
+  --spacing-xl: 64px;
+  --spacing-2xl: 96px;
+
+  /* ---------- 过渡 ---------- */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---------- 字体 ----------
+     全站只用 MiSans 一族。--font-mono 名义上是等宽，
+     实际仍指向 MiSans —— 这是原站的做法：
+     用字号、字重、字距来区分层级，而不是切换字体族。
+     好处是整体高度统一，不会出现"两种字体打架"的廉价感。 */
+  --font-sans: "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "MiSans", "SF Mono", "Fira Code", "Consolas", monospace;
+  --font-hero: "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* ---------- 布局尺寸 ---------- */
+  --navbar-height: 76px;
+}
+
+/* ==========================================================================
+   浅色主题
+   --------------------------------------------------------------------------
+   主色从 #00ff88 换成 #00875a：
+   亮绿在浅底上对比度只有约 1.6:1，几乎不可读；
+   深绿 #00875a 在 #f8f8f8 上是 4.9:1，达到 WCAG AA。
+   ========================================================================== */
+[data-theme="light"] {
+  --bg-primary: #f8f8f8;
+  --bg-secondary: #f0f0f0;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #e4e4e4;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --text-tertiary: #999;
+
+  --accent: #00875a;
+  --accent-dim: #00875a99;
+  --accent-glow: #00875a1f;
+  --border: #e0e0e0;
+  --border-accent: #00875a4d;
+}

@@ -1,0 +1,18 @@
+# 本地研究资料（原站构建产物、截图等）
+_research/
+_research2/
+shots/
+.screenshots/
+.trae-html-share-packages/
+
+# 本地开发工具与字体源文件
+tools/
+
+# 旧版说明文档，已不适用于当前站点
+README.md
+
+# 系统与缓存文件
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc

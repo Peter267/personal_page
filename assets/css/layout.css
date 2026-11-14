@@ -1,0 +1,674 @@
+/* ==========================================================================
+   layout.css — 布局骨架
+   --------------------------------------------------------------------------
+   结构对齐 apanzinc.top：
+     #app (flex column, min-height 100vh)
+       ├── .navbar       固定顶栏（backdrop-filter 毛玻璃）
+       ├── .mobile-menu  全屏抽屉菜单
+       ├── #main-content flex:1，padding-top 让开顶栏
+       └── .footer       等宽小字页脚
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 应用外壳
+   ========================================================================== */
+
+#app {
+  flex-direction: column;
+  min-height: 100vh;
+  display: flex;
+  position: relative;
+}
+
+#main-content {
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* padding-top 要精确等于顶栏高度，否则顶部内容会被固定顶栏盖住。
+     原站用 96px（顶栏 76 + 余量 20），这里沿用。 */
+  padding-top: 96px;
+  display: flex;
+}
+
+/* 首页特殊处理：占满一屏，不产生滚动条。
+   用 :has() 让样式依赖"当前是否有 .home-page 子元素"，
+   这样路由切换时布局能自动适配，不需要 JS 手动加类。 */
+#app:has(.home-page) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#app:has(.home-page) #main-content {
+  padding-top: 56px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 子页面：正常文档流，可滚动 */
+#app:has(.page):not(:has(.home-page)) {
+  min-height: 100dvh;
+}
+
+#app:has(.page):not(:has(.home-page)) #main-content {
+  flex-direction: column;
+  flex: 1;
+  display: flex;
+}
+
+#app:has(.page):not(:has(.home-page)) #main-content .page {
+  flex: 1;
+}
+
+/* ==========================================================================
+   2. 容器与区块
+   ========================================================================== */
+
+.container {
+  width: 100%;
+  max-width: 1000px;
+  padding: 0 var(--spacing-lg);
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+
+/* 子页面容器：去掉上下 padding，由 section 自己控制 */
+.page.container {
+  width: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+section {
+  padding: var(--spacing-lg) 0;
+  /* 锚点跳转时让开固定顶栏 */
+  scroll-margin-top: 60px;
+  position: relative;
+}
+
+.page.container > section {
+  padding-top: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  margin: 0;
+}
+
+/* ---------- 区块标题组 ----------
+   三层结构：小标签（等宽+字距）→ 大标题（负字距）→ 说明（次级色）。
+   这个组合是"信息层级清晰"的核心。 */
+.section-label {
+  font-family: var(--font-mono);
+  color: var(--accent-dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.section-label svg {
+  color: var(--accent);
+  height: 14px;
+  width: auto;
+  display: block;
+}
+
+.section-title {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 550;
+  line-height: 1.3;
+  /* 中文标题禁用孤字成行 */
+  text-wrap: balance;
+}
+
+.section-lead {
+  max-width: 42em;
+  margin: 0 0 var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: clamp(13px, 1.2vw, 15px);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ==========================================================================
+   3. corner-frame —— 四角边框（全站最标志性的视觉元素）
+   --------------------------------------------------------------------------
+   实现原理：用 4 条独立的 linear-gradient 作为 background，
+   每条只画一小段（例如 "left top / 14px 1.5px no-repeat" = 左上角一条 14×1.5 的横线）。
+   :before 画上方两个角，:after 画下方两个角。
+
+   为什么不用 border：border 只能画完整矩形；要画"只有四个角"的边框，
+   用渐变背景是最轻量的方案（不需要伪元素做 8 个 span，也不需要 SVG）。
+
+   悬停时通过 CSS 变量 --corner-color 变色，四条线一起变，无需重写规则。
+   ========================================================================== */
+
+.corner-frame {
+  --corner-size: 14px;
+  --corner-thickness: 1.5px;
+  --corner-color: var(--border-accent);
+  position: relative;
+  /* 强制去掉常规边框与圆角 —— 这个组件的气质就来自"硬直角" */
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.corner-frame:before,
+.corner-frame:after {
+  content: "";
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.15s var(--ease-out);
+  position: absolute;
+  inset: 0;
+}
+
+/* 上方的两个角：左上横 + 左上竖 + 右上横 + 右上竖 */
+.corner-frame:before {
+  background:
+    linear-gradient(var(--corner-color), var(--corner-color)) left top /
+      var(--corner-size) var(--corner-thickness) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) left top /
+      var(--corner-thickness) var(--corner-size) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) right top /
+      var(--corner-size) var(--corner-thickness) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) right top /
+      var(--corner-thickness) var(--corner-size) no-repeat;
+}
+
+/* 下方的两个角 */
+.corner-frame:after {
+  background:
+    linear-gradient(var(--corner-color), var(--corner-color)) left bottom /
+      var(--corner-size) var(--corner-thickness) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) left bottom /
+      var(--corner-thickness) var(--corner-size) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) right bottom /
+      var(--corner-size) var(--corner-thickness) no-repeat,
+    linear-gradient(var(--corner-color), var(--corner-color)) right bottom /
+      var(--corner-thickness) var(--corner-size) no-repeat;
+}
+
+.corner-frame:hover {
+  --corner-color: var(--accent);
+}
+
+/* ==========================================================================
+   4. 顶栏
+   --------------------------------------------------------------------------
+   毛玻璃效果用 backdrop-filter: blur(12px) saturate(1.2)。
+   saturate 略微提高饱和度，能让背后的 webgl 光晕透出来时更有"玻璃感"。
+
+   提供 @supports 降级：不支持 backdrop-filter 时，
+   把背景不透明度从 85% 提到 95%，保证文字可读。
+   ========================================================================== */
+
+.navbar {
+  z-index: 100;
+  padding: var(--spacing-sm) 0;
+  background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--border);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+@supports not (
+  (-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))
+) {
+  .navbar {
+    background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+  }
+}
+
+/* 顶栏内的容器不受 1000px 宽度限制，铺满整宽 */
+.navbar .container {
+  max-width: none;
+  padding: 0 var(--spacing-lg);
+}
+
+.navbar-content {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+
+.navbar-left {
+  align-items: center;
+  display: flex;
+}
+
+.navbar-logo {
+  color: var(--text-primary);
+  transition: color var(--transition-fast);
+  align-items: center;
+  display: flex;
+}
+
+.navbar-logo svg {
+  width: auto;
+  height: 24px;
+  display: block;
+  overflow: visible;
+}
+
+.navbar-logo:hover {
+  color: var(--accent);
+}
+
+.navbar-right,
+.navbar-links {
+  align-items: center;
+  gap: var(--spacing-sm);
+  display: flex;
+}
+
+/* ---------- 导航链接 ----------
+   激活态不是下划线，而是"变色 + 浅底块"。
+   这是原站的选择，视觉上更接近"标签页"而不是"网页导航"。 */
+.nav-link {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+  letter-spacing: 0.02em;
+  padding: 6px 14px;
+}
+
+.nav-link:hover,
+.nav-link.nav-link-active {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+/* ---------- 图标按钮（主题切换 / 汉堡）----------
+   尺寸统一 44×44 —— 这是 iOS HIG 的最小可点击区域。
+   圆角用 --radius-sm(4px) 而不是圆形：原站就是方形按钮，
+   改成圆形会让整体气质从"工程感"滑向"消费级 App"。 */
+.theme-toggle,
+.menu-toggle {
+  border-radius: var(--radius-sm);
+  width: 44px;
+  height: 44px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: color 0.2s var(--ease-out), background 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out);
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.theme-toggle:hover,
+.menu-toggle:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+  border-color: var(--border-accent);
+}
+
+.theme-icon {
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+/* 汉堡按钮默认隐藏，≤768px 才出现 */
+.menu-toggle {
+  z-index: 102;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  display: none;
+}
+
+/* 三条横线的汉堡图标，展开时变 X */
+.menu-icon {
+  pointer-events: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+}
+
+.menu-icon span {
+  width: 100%;
+  height: 1.5px;
+  transition: transform 0.25s var(--ease-out), opacity 0.2s var(--ease-out);
+  transform-origin: 50%;
+  background: currentColor;
+  border-radius: 1px;
+  display: block;
+}
+
+.menu-icon.menu-open span:first-child {
+  transform: translateY(5.5px) rotate(45deg);
+}
+
+.menu-icon.menu-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-icon.menu-open span:nth-child(3) {
+  transform: translateY(-5.5px) rotate(-45deg);
+}
+
+/* ==========================================================================
+   5. 移动端全屏菜单
+   --------------------------------------------------------------------------
+   逐项滑入：每项用 --i 变量设置 transition-delay，
+   形成"依次从左侧滑出"的效果。
+   关闭时用倒序延迟（--total - 1 - --i），让最后进来的先出去。 */
+.mobile-menu {
+  background: var(--bg-primary);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-out);
+  display: block;
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+}
+
+.mobile-menu.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-menu-content {
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-lg);
+  min-height: 100vh;
+  padding: var(--spacing-xl) var(--spacing-md);
+  flex-direction: column;
+  display: flex;
+}
+
+.mobile-nav-link {
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transition: transform 0.35s var(--ease-out), opacity 0.3s var(--ease-out);
+  transition-delay: calc(var(--i) * 60ms);
+  font-size: clamp(1.8rem, 8vw, 3rem);
+  font-weight: 600;
+  transform: translate(-100%);
+}
+
+.mobile-menu.is-open .mobile-nav-link {
+  opacity: 1;
+  transform: translate(0);
+}
+
+.mobile-menu:not(.is-open) .mobile-nav-link {
+  transition: transform 0.25s var(--ease-out), opacity 0.2s var(--ease-out);
+  transition-delay: calc((var(--total) - 1 - var(--i)) * 60ms);
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link.nav-link-active {
+  color: var(--accent);
+  background: 0 0 !important;
+}
+
+.menu-close-icon {
+  pointer-events: none;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+/* ==========================================================================
+   6. 页脚
+   --------------------------------------------------------------------------
+   等宽小字 + 左右分栏。左版权，右链接。
+   字号只有 12px —— 刻意做得"轻"，不抢正文。 */
+.footer {
+  background: var(--bg-primary);
+  border-top: none;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: clamp(16px, 3vw, 40px) clamp(20px, 5vw, 64px)
+    clamp(14px, 2.5vw, 32px);
+}
+
+.footer-content {
+  width: 100%;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(12px, 3vw, 48px);
+  padding: 0;
+  display: flex;
+}
+
+.footer-left,
+.footer-right {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.footer-left {
+  flex-shrink: 0;
+}
+
+.footer-right {
+  text-align: right;
+  flex: auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.footer-divider {
+  color: var(--border);
+}
+
+.footer-name {
+  color: var(--text-primary);
+}
+
+.footer-right a {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.footer-right a:hover {
+  color: var(--accent);
+}
+
+[data-theme="light"] .footer-content {
+  color: var(--text-tertiary);
+}
+
+[data-theme="light"] .footer-name {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .footer-right a {
+  color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   7. 响应式
+   --------------------------------------------------------------------------
+   原站的断点较密（1024 / 768 / 640 / 480 / 390），
+   因为移动端每一档的可用宽度差异都不小，粗粒度断点会导致某档排版塌掉。
+   ========================================================================== */
+
+@media (width <= 1024px) {
+  .footer {
+    padding: 20px clamp(18px, 4vw, 40px) 16px;
+  }
+
+  .footer-content {
+    font-size: 11px;
+  }
+}
+
+@media (width <= 768px) {
+  .container {
+    padding: 0 var(--spacing-lg);
+  }
+
+  section,
+  .page.container > section {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .section-title {
+    font-size: clamp(1.4rem, 5vw, 1.8rem);
+  }
+
+  /* 顶栏收窄 */
+  .navbar {
+    padding: 10px 0;
+  }
+
+  .navbar .container {
+    padding: 0 16px;
+  }
+
+  .navbar-right {
+    gap: 8px;
+  }
+
+  /* 桌面导航隐藏，汉堡出现 */
+  .navbar-links {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .footer {
+    padding: 18px 16px 14px;
+  }
+
+  .footer-content {
+    gap: 12px;
+    font-size: 11px;
+  }
+
+  .footer-right {
+    gap: 6px;
+  }
+
+  .footer-right a {
+    white-space: normal;
+  }
+}
+
+@media (width <= 640px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+
+  section,
+  .page.container > section {
+    padding: var(--spacing-lg) 0;
+    scroll-margin-top: 55px;
+  }
+
+  .section-title {
+    font-size: clamp(1.3rem, 5vw, 1.6rem);
+  }
+}
+
+@media (width <= 560px) {
+  .footer {
+    padding: 16px 14px 12px;
+  }
+
+  .footer-content {
+    gap: 8px;
+  }
+
+  .footer-right {
+    gap: 6px;
+  }
+
+  .footer-right a {
+    white-space: normal;
+  }
+}
+
+@media (width <= 480px) {
+  .container {
+    padding: 0 var(--spacing-lg);
+  }
+
+  section,
+  .page.container > section {
+    padding: var(--spacing-lg) 0;
+    scroll-margin-top: 50px;
+  }
+
+  .section-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+
+  .section-label {
+    font-size: 12px;
+  }
+}
+
+@media (width <= 390px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+
+  .section-title {
+    font-size: clamp(1.5rem, 6vw, 1.8rem);
+  }
+}
+
+/* 超窄屏：页脚换行，右栏占满一行 */
+@media (width <= 380px) {
+  .footer-content {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .footer-left {
+    order: 1;
+  }
+
+  .footer-right {
+    order: 0;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .footer-divider-main {
+    display: none;
+  }
+
+  .footer-right a {
+    white-space: nowrap;
+  }
+}
+
+/* 矮屏：压缩页脚，别让它占掉宝贵的纵向空间 */
+@media (height <= 640px) {
+  .footer {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+}

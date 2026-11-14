@@ -1,0 +1,1502 @@
+/* ==========================================================================
+   components.css — 视觉组件
+   --------------------------------------------------------------------------
+   严格对齐 apanzinc.top 的组件实现：
+     Hero（左下大 logo + 右下简介 + chips）
+     卡片家族（project / friend / social / achievement）
+     友链申请弹窗
+     主内容进入动画
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 通用卡片
+   --------------------------------------------------------------------------
+   全部卡片共用一个基底：bg-secondary 底 + border 描边 + 4px 圆角。
+   悬停只改"边框变主色 + 底色变亮"，不加位移、不加阴影 ——
+   这是"克制"的体现，位移和阴影会立刻让页面变廉价。
+   ========================================================================== */
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+/* ==========================================================================
+   2. 首页 Hero
+   --------------------------------------------------------------------------
+   布局：整体 flex:1 撑满可用高度，内容底对齐（align-items:flex-end）。
+        左侧 flex:auto 放超大 logo，右侧固定 360px 放简介与 chips。
+
+   为什么是底对齐而不是居中：底部对齐让大字"贴着地面"，
+   配合上方大片留白（被 shader 光晕填充），产生"海报/专辑封面"的构图感。
+   居中会显得平淡，像普通的 banner。
+   ========================================================================== */
+
+.home-page {
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.hero {
+  flex: 1;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  /* 负 margin + 等量 padding：让 shader 画布延伸到顶栏下方，
+     但内容仍从顶栏之下开始。这是全屏背景 + 固定顶栏的标准解法。 */
+  margin-top: -56px;
+  padding: 56px 0 0;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---------- shader 画布层 ---------- */
+.hero-shader {
+  z-index: 0;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+/* canvas 用绝对定位铺满，而不是 width/height:100%。
+   原因：canvas 在 flex/grid 容器里如果只写 100%，浏览器可能
+   在首次布局时算出 0 高度（父级高度由 flex 决定，存在循环依赖），
+   导致 WebGL 拿到 0×0 的画布、什么都画不出来。
+   绝对定位 + inset:0 用的是"已解析的父级盒子"，没有这个问题。 */
+.hero-shader canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ---------- 遮罩层 ----------
+   两层渐变：底部往上压暗（保证文字可读），左侧往右压暗（给 logo 让出背景）。
+   8% → 42% 的过渡区间很关键：太陡会出现硬边，太缓则文字压在亮色上不可读。 */
+.hero-veil {
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--bg-primary) 8%, transparent 42%),
+    linear-gradient(90deg, #00000059 0%, transparent 42%);
+  position: absolute;
+  inset: 0;
+}
+
+[data-theme="light"] .hero-veil {
+  background: linear-gradient(to top, var(--bg-primary) 8%, transparent 42%),
+    linear-gradient(90deg, #ffffff59 0%, transparent 42%);
+}
+
+/* ---------- 内容层 ---------- */
+.hero-content {
+  z-index: 2;
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: clamp(20px, 4vw, 64px);
+  width: 100%;
+  padding: 0 clamp(20px, 5vw, 64px);
+  display: flex;
+  position: relative;
+}
+
+.intro-left {
+  flex: auto;
+  min-width: 0;
+}
+
+/* 超大站名字标：宽度用 clamp 从 200px 到 480px。
+   字标由 tools/make-logo-svg.py 从 RobotoFlex 粗体提取路径生成，
+   与原站一样是纯 SVG，不依赖运行时字体加载。 */
+.hero-logo {
+  width: clamp(200px, 50vw, 480px);
+  color: var(--text-primary);
+}
+
+.hero-logo svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* fill 用 currentColor 继承父级 color，主题切换时自动跟随 */
+  color: var(--text-primary);
+}
+
+/* ---------- 右侧简介 ---------- */
+.intro-right {
+  text-align: right;
+  flex: 0 360px;
+  width: min(360px, 40%);
+  min-width: 0;
+  margin-left: auto;
+}
+
+/* 简介用 font-weight:300（细体）。
+   在大片深色背景上，细体比常规体更"透气"，
+   而且与左侧粗壮的 logo 形成对比，构图才不呆板。 */
+.intro-bio {
+  max-width: 100%;
+  font-size: clamp(12px, 1.15vw, 15px);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  /* keep-all：禁止在词内断行，中文按标点断，英文按单词断。
+     没有它，"AI驱动的" 这种中英混排会断得很难看。 */
+  word-break: keep-all;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+  margin: 0;
+  font-weight: 300;
+  line-height: 1.65;
+  transform: translateY(10px);
+}
+
+.bio-line {
+  display: block;
+}
+
+/* 入场：由 JS 在挂载后加 .bio-visible */
+.bio-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- chips（关键词胶囊）---------- */
+.hero-chips {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: clamp(12px, 1.5vw, 20px);
+  display: flex;
+}
+
+.hero-chip {
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out),
+    color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 450;
+  text-decoration: none;
+  transform: translateY(10px);
+}
+
+/* 逐个错开入场，由 JS 依次加 chip-visible */
+.hero-chip.chip-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hero-chip:hover {
+  color: var(--accent);
+  border-color: var(--border-accent);
+  background: var(--accent-glow);
+}
+
+[data-theme="light"] .hero-logo {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .intro-bio {
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   3. 项目卡片
+   --------------------------------------------------------------------------
+   注意：用的也是 .corner-frame（四角边框），不是常规矩形描边。
+   卡片内部结构：图标 + 名称（等宽字）在一行，描述在下。
+   ========================================================================== */
+
+.projects-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.projects-grid {
+  gap: var(--spacing-sm);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  width: 100%;
+  display: grid;
+}
+
+.project-card {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  flex-direction: column;
+  text-decoration: none;
+  display: flex;
+}
+
+.project-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.project-header {
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  display: flex;
+}
+
+.project-icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.project-name {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.project-desc {
+  color: var(--text-secondary);
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   4. 友链卡片
+   -------------------------------------------------------------------------- */
+
+.friend-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.friend-grid {
+  gap: var(--spacing-sm);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  width: 100%;
+  display: grid;
+}
+
+.friend-link {
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  height: 100%;
+  display: flex;
+}
+
+.friend-link:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.friend-avatar {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.friend-content {
+  flex-direction: column;
+  min-width: 0;
+  display: flex;
+}
+
+/* 名字前自动加 @（用 :before 而不是写死在数据里） */
+.friend-name {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.friend-name:before {
+  content: "@";
+  color: var(--accent);
+}
+
+.friend-desc {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* ---------- 友链加载 / 错误态 ---------- */
+.friend-loading,
+.friend-error {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-md);
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+
+.loading-left,
+.error-left {
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.loading-icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  animation: 1s linear infinite friend-spin;
+  display: block;
+}
+
+.error-dot {
+  background: #e74c3c;
+  border-radius: 50%;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+}
+
+@keyframes friend-spin {
+  0% {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text,
+.error-text {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.retry-btn {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 8px 20px;
+}
+
+.retry-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- 申请友链 ---------- */
+.apply-section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--border);
+}
+
+.apply-title {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: -0.02em;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 550;
+  line-height: 1.3;
+}
+
+.apply-lead {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-size: clamp(14px, 1.2vw, 16px);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.apply-grid {
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr 1fr;
+  display: grid;
+}
+
+.apply-card {
+  flex-direction: column;
+  display: flex;
+}
+
+.apply-card-label {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.apply-info-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  flex: 1;
+  position: relative;
+}
+
+.copy-btn {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0;
+  padding: 4px 12px;
+  font-size: 12px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.apply-info-card:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.apply-info-row {
+  color: var(--text-primary);
+  word-break: break-all;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.8;
+  display: flex;
+}
+
+.apply-info-row + .apply-info-row {
+  margin-top: 10px;
+}
+
+.apply-info-label {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  min-width: 36px;
+}
+
+.apply-info-num {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 36px;
+}
+
+.apply-info-url {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.apply-rules-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  flex: 1;
+}
+
+.apply-footer {
+  margin-top: var(--spacing-lg);
+  justify-content: flex-end;
+  display: flex;
+}
+
+.apply-btn {
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  display: inline-flex;
+}
+
+.apply-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+/* ---------- 友链申请弹窗 ---------- */
+.modal-overlay {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  background: #000000b3;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 40px 16px;
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.modal-overlay.is-open {
+  display: flex;
+}
+
+.modal-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 80px);
+  position: relative;
+  overflow: hidden auto;
+  box-shadow: 0 24px 80px #0006;
+}
+
+.modal-header-bar {
+  z-index: 10;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  display: flex;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.modal-header-title {
+  height: 36px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  align-items: center;
+  padding: 0 12px;
+  display: flex;
+}
+
+.title-slash {
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.modal-close {
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+/* 原站用飞书 iframe；这里改为同尺寸的表单，提交后走邮件 */
+.apply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 64px var(--spacing-md) var(--spacing-md);
+}
+
+.apply-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apply-field label {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.apply-field input,
+.apply-field textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  resize: vertical;
+}
+
+.apply-field input:focus,
+.apply-field textarea:focus {
+  border-color: var(--accent);
+}
+
+.apply-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.modal-form-tip {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (width <= 768px) {
+  .friend-error {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .error-text {
+    font-size: 13px;
+  }
+
+  .retry-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .modal-container {
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+  }
+
+  .modal-header-title {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+  }
+
+  .apply-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 480px) {
+  .friend-name {
+    word-break: break-word;
+    font-size: 13px;
+  }
+
+  .friend-desc {
+    font-size: 11px;
+  }
+
+  .apply-btn {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================================
+   5. 社交链接卡片
+   ========================================================================== */
+
+.social-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.social-grid {
+  gap: var(--spacing-sm);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  display: grid;
+}
+
+.social-link {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  align-items: center;
+  gap: 12px;
+  display: flex;
+}
+
+.social-link:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.social-icon {
+  color: var(--text-secondary);
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.social-name {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.social-handle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.social-info {
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+/* 箭头默认隐藏，悬停才出现 —— 减少静态噪音 */
+.social-arrow {
+  color: var(--text-tertiary);
+  opacity: 0;
+  font-size: 14px;
+}
+
+.social-link:hover .social-arrow {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   6. 成就列表
+   --------------------------------------------------------------------------
+   技巧：容器背景设成 --border，子项间隔 1px + 子项背景 --bg-secondary，
+   这样 1px 的间隙会"漏出"背景色，自动形成分隔线。
+   比给每个子项加 border-bottom 更干净（不会有最后一条多余的线）。
+   ========================================================================== */
+
+.achievement-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.achievement-list {
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  flex-direction: column;
+  gap: 1px;
+  display: flex;
+  overflow: hidden;
+}
+
+.achievement-item {
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  display: flex;
+}
+
+.achievement-marker {
+  flex-shrink: 0;
+  align-items: flex-start;
+  width: 24px;
+  padding-top: 4px;
+  display: flex;
+}
+
+.marker-arrow {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.achievement-content {
+  flex: 1;
+}
+
+.achievement-title {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.achievement-desc {
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.achievement-meta {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.achievement-date {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  /* tabular-nums：数字等宽，多行日期能对齐 */
+  font-variant-numeric: tabular-nums;
+}
+
+.achievement-tag {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+}
+
+/* 列表底部备注：右对齐、等宽小字、低对比度。
+   不加 text-align 会默认左对齐，视觉上和上面的列表脱节。 */
+.achievement-note {
+  margin-top: var(--spacing-sm);
+  text-align: right;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   7. 文章列表
+   --------------------------------------------------------------------------
+   结构：固定宽度日期列 + 标题/摘要。
+   与成就列表共用「1px 间隙当分隔线」的做法，视觉上属于同一家族。
+   ========================================================================== */
+
+.post-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.post-list {
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  flex-direction: column;
+  gap: 1px;
+  display: flex;
+  overflow: hidden;
+}
+
+.post-item {
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  transition: background 0.2s var(--ease-out);
+  display: flex;
+}
+
+.post-item:hover {
+  background: var(--bg-hover);
+}
+
+.post-date {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  width: 88px;
+  padding-top: 3px;
+}
+
+.post-body {
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+}
+
+.post-title {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  transition: color 0.15s ease;
+  display: block;
+}
+
+.post-item:hover .post-title {
+  color: var(--accent);
+}
+
+.post-arrow {
+  color: var(--accent);
+  opacity: 0;
+  font-size: 12px;
+  margin-left: 6px;
+  transition: opacity 0.15s var(--ease-out);
+}
+
+.post-item:hover .post-arrow {
+  opacity: 1;
+}
+
+.post-summary {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+.post-state {
+  padding: var(--spacing-lg) var(--spacing-md);
+  text-align: center;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.post-state a {
+  color: var(--accent);
+}
+
+/* 底部「查看全部」：右对齐、与成就列表备注同一层级 */
+.post-more {
+  margin-top: var(--spacing-sm);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.post-more a {
+  color: var(--text-tertiary);
+}
+
+.post-more a:hover {
+  color: var(--accent);
+}
+
+@media (width <= 600px) {
+  .post-item {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .post-date {
+    width: auto;
+    padding-top: 0;
+  }
+}
+
+/* ==========================================================================
+   8. 页面切换动画
+   ========================================================================== */
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s var(--ease-out);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active,
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: none;
+  }
+}
+
+/* 原站页面切换：0.2s 淡入上移 */
+.page {
+  animation: page-in 0.2s var(--ease-out) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   9. 错误页
+   ========================================================================== */
+
+.app-error {
+  background: var(--bg-primary);
+  z-index: 9999;
+  padding: var(--spacing-lg);
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  position: fixed;
+  inset: 0;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.error-icon {
+  margin-bottom: var(--spacing-md);
+  font-size: 4rem;
+}
+
+.error-title {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.5rem;
+}
+
+.error-message {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  word-break: break-word;
+}
+
+.error-retry-btn {
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  transition: opacity var(--transition-fast);
+  font-size: 0.9rem;
+  display: inline-flex;
+}
+
+.error-retry-btn:hover {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   10. 响应式
+   ========================================================================== */
+
+@media (width <= 1024px) {
+  .intro-right {
+    flex-basis: 300px;
+    width: min(300px, 38%);
+  }
+
+  .hero-logo {
+    width: clamp(180px, 45vw, 400px);
+  }
+
+  .intro-bio {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+}
+
+@media (width <= 768px) {
+  /* 移动端：内容改为纵向堆叠，左对齐 */
+  .hero {
+    margin-top: -52px;
+    padding: 52px 0 0;
+  }
+
+  .hero-content {
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 0 20px 36px;
+  }
+
+  .intro-left {
+    width: 100%;
+  }
+
+  .hero-logo {
+    width: clamp(180px, 60vw, 320px);
+  }
+
+  .intro-right {
+    text-align: left;
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+  }
+
+  .intro-bio {
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  /* 移动端把分行改成行内。
+     原来这里用 :after 补一个中文逗号，但如果原文本身已经带了标点，
+     就会出现"，，"这种重复。改为不加标点，交给 content.js 里的原文自己带。 */
+  .bio-line {
+    display: inline;
+  }
+
+  .hero-chips {
+    justify-content: flex-start;
+  }
+
+  /* 触屏没有 hover，悬停态要禁用否则会"粘住" */
+  .hero-chip:hover,
+  .hero-chip:active {
+    color: inherit !important;
+    border-color: var(--border) !important;
+    background: 0 0 !important;
+    transform: none !important;
+  }
+
+  .projects-grid,
+  .friend-grid,
+  .social-grid {
+    gap: var(--spacing-md);
+    grid-template-columns: 1fr;
+  }
+
+  .project-card {
+    padding: var(--spacing-md);
+    min-width: 0;
+  }
+
+  .project-header {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .project-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .project-name {
+    word-break: break-word;
+    font-size: 16px;
+  }
+
+  .project-desc {
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .achievement-item {
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    min-width: 0;
+  }
+
+  .achievement-title {
+    word-break: break-word;
+    font-size: 15px;
+  }
+
+  .achievement-desc {
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .social-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .social-link {
+    padding: var(--spacing-sm);
+    min-width: 0;
+  }
+
+  .social-icon,
+  .social-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .social-name {
+    font-size: 13px;
+  }
+
+  .social-handle {
+    font-size: 10px;
+  }
+}
+
+@media (width <= 480px) {
+  .hero-content {
+    gap: 14px;
+    padding: 0 16px 32px;
+  }
+
+  .hero-logo {
+    width: clamp(160px, 65vw, 280px);
+  }
+
+  .intro-bio {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .projects-grid,
+  .friend-grid {
+    gap: var(--spacing-sm);
+  }
+
+  .project-card {
+    padding: var(--spacing-md);
+    min-width: 0;
+  }
+
+  .project-header {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .project-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .project-name {
+    font-size: 15px;
+  }
+
+  .project-desc {
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  /* 成就项在窄屏改为纵向，避免标记列挤占文字宽度 */
+  .achievement-item {
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .achievement-marker {
+    width: auto;
+    padding-top: 0;
+  }
+
+  .marker-arrow {
+    font-size: 12px;
+  }
+
+  .achievement-title {
+    font-size: 14px;
+  }
+
+  .achievement-desc {
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .achievement-tag {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .social-grid {
+    gap: var(--spacing-xs);
+    grid-template-columns: 1fr;
+  }
+
+  .social-link {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .social-icon,
+  .social-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .social-name {
+    font-size: 13px;
+  }
+
+  .social-handle {
+    font-size: 12px;
+  }
+}
+
+@media (width <= 390px) {
+  .project-card {
+    padding: var(--spacing-sm);
+  }
+
+  .project-name {
+    font-size: 14px;
+  }
+
+  .project-desc {
+    font-size: 13px;
+  }
+
+  .achievement-item {
+    padding: var(--spacing-sm);
+  }
+
+  .achievement-title {
+    font-size: 13px;
+  }
+
+  .achievement-desc {
+    font-size: 12px;
+  }
+
+  .achievement-date {
+    font-size: 10px;
+  }
+
+  .social-link {
+    padding: var(--spacing-sm);
+  }
+
+  .social-name {
+    font-size: 13px;
+  }
+
+  .social-handle {
+    font-size: 10px;
+  }
+}
+
+/* 矮屏：压小 logo 与简介，保证不溢出 */
+@media (height <= 640px) {
+  .hero-content {
+    gap: 12px;
+  }
+
+  .hero-logo {
+    width: clamp(140px, 35vw, 280px);
+  }
+
+  .intro-bio {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+}
+
+@media (height <= 500px) {
+  .hero-logo {
+    width: clamp(120px, 30vw, 220px);
+  }
+
+  .intro-bio {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+/* ==========================================================================
+   11. 减少动效降级
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .intro-bio {
+    transition: none;
+  }
+
+  .hero-chip {
+    opacity: 1;
+    transition: none;
+    transform: none;
+  }
+}
