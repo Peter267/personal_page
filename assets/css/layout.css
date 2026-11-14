@@ -249,15 +249,20 @@ section {
   display: flex;
 }
 
-.navbar-logo svg {
-  width: auto;
-  height: 24px;
+/* 左上角站名换成了圆形头像：30px，描边 + 悬停主色呼吸 */
+.navbar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
   display: block;
-  overflow: visible;
+  box-shadow: 0 0 0 1px var(--border);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
-.navbar-logo:hover {
-  color: var(--accent);
+.navbar-logo:hover .navbar-avatar {
+  box-shadow: 0 0 0 1px var(--accent);
+  transform: scale(1.04);
 }
 
 .navbar-right,

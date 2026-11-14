@@ -86,14 +86,25 @@
   height: 100% !important;
 }
 
+/* 3D 奔跑人形叠加在渐变画布之上，资源就绪后淡入，
+   避免加载过程中出现一块死黑 */
+.hero-shader .runner-canvas {
+  opacity: 0;
+  transition: opacity 1s var(--ease-out);
+}
+
+.hero-shader .runner-canvas.is-ready {
+  opacity: 1;
+}
+
 /* ---------- 遮罩层 ----------
    两层渐变：底部往上压暗（保证文字可读），左侧往右压暗（给 logo 让出背景）。
    8% → 42% 的过渡区间很关键：太陡会出现硬边，太缓则文字压在亮色上不可读。 */
 .hero-veil {
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(to top, var(--bg-primary) 8%, transparent 42%),
-    linear-gradient(90deg, #00000059 0%, transparent 42%);
+  background: linear-gradient(to top, var(--bg-primary) 2%, transparent 32%),
+    linear-gradient(90deg, #00000040 0%, transparent 38%);
   position: absolute;
   inset: 0;
 }
@@ -121,20 +132,30 @@
   min-width: 0;
 }
 
-/* 超大站名字标：宽度用 clamp 从 200px 到 480px。
-   字标由 tools/make-logo-svg.py 从 RobotoFlex 粗体提取路径生成，
-   与原站一样是纯 SVG，不依赖运行时字体加载。 */
-.hero-logo {
-  width: clamp(200px, 50vw, 480px);
-  color: var(--text-primary);
+/* 首屏头像：完全圆形。
+   原图 906×906 PNG，压缩成 512/256/96 三档 WebP（52KB / 16KB / 3KB），
+   按显示尺寸取最合适的一档，不做运行时缩放。 */
+.hero-avatar {
+  width: clamp(148px, 17vw, 216px);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: block;
+  /* 发丝级描边 + 主色光晕，把圆形从黑底里"托"出来 */
+  box-shadow: 0 0 0 1px var(--border-accent), 0 0 48px -20px var(--accent-dim);
+  animation: avatar-breathe 7s ease-in-out infinite;
 }
 
-.hero-logo svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  /* fill 用 currentColor 继承父级 color，主题切换时自动跟随 */
-  color: var(--text-primary);
+@keyframes avatar-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--border-accent), 0 0 48px -20px var(--accent-dim);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--border-accent), 0 0 64px -16px var(--accent-dim);
+  }
 }
 
 /* ---------- 右侧简介 ---------- */
@@ -211,8 +232,8 @@
   background: var(--accent-glow);
 }
 
-[data-theme="light"] .hero-logo {
-  color: var(--text-primary);
+[data-theme="light"] .hero-avatar {
+  box-shadow: 0 0 0 1px var(--border-accent), 0 0 56px -20px var(--accent);
 }
 
 [data-theme="light"] .intro-bio {
@@ -1176,8 +1197,8 @@
     width: min(300px, 38%);
   }
 
-  .hero-logo {
-    width: clamp(180px, 45vw, 400px);
+  .hero-avatar {
+    width: clamp(128px, 15vw, 176px);
   }
 
   .intro-bio {
@@ -1205,8 +1226,8 @@
     width: 100%;
   }
 
-  .hero-logo {
-    width: clamp(180px, 60vw, 320px);
+  .hero-avatar {
+    width: clamp(104px, 28vw, 128px);
   }
 
   .intro-right {
@@ -1322,8 +1343,8 @@
     padding: 0 16px 32px;
   }
 
-  .hero-logo {
-    width: clamp(160px, 65vw, 280px);
+  .hero-avatar {
+    width: clamp(96px, 26vw, 120px);
   }
 
   .intro-bio {
@@ -1465,8 +1486,8 @@
     gap: 12px;
   }
 
-  .hero-logo {
-    width: clamp(140px, 35vw, 280px);
+  .hero-avatar {
+    width: clamp(96px, 18vh, 144px);
   }
 
   .intro-bio {
@@ -1476,8 +1497,8 @@
 }
 
 @media (height <= 500px) {
-  .hero-logo {
-    width: clamp(120px, 30vw, 220px);
+  .hero-avatar {
+    width: clamp(80px, 15vh, 112px);
   }
 
   .intro-bio {
@@ -1491,6 +1512,14 @@
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
   .intro-bio {
+    transition: none;
+  }
+
+  .hero-avatar {
+    animation: none;
+  }
+
+  .hero-shader .runner-canvas {
     transition: none;
   }
 
