@@ -27,13 +27,13 @@ export const content = {
      ========================================================================== */
   hero: {
     name: 'Peter267',
-    bioLines: ['一名学生、独立开发者、博主，', '从折腾到创造，无限进步。'],
+    bioLines: ['一名初中生、独立开发者、博主，', '从折腾到创造，无限进步。'],
     chips: [
       { label: '天津', href: '' },
       { label: 'Python', href: '' },
       { label: 'Node.js', href: '' },
       { label: 'Hexo', href: '' },
-      { label: '独立开发者', href: '' },
+      { label: '《电教委员指南》作者', href: '' },
       { label: 'INTP-T', href: '' },
     ],
   },
@@ -43,39 +43,39 @@ export const content = {
      ========================================================================== */
   projects: {
     title: '项目',
-    lead: '本页列出目前公开的项目：SimpleSearch、智学网排名计算、班级随机抽号器、Markdown 笔记、CN-e-learning 与 AppIcon Forge。',
+    lead: '我做过的一些项目',
     items: [
       {
-        name: 'SimpleSearch',
+        name: '个人博客',
+        description: '基于 Astro 的个人博客，使用 Firefly 主题',
+        link: 'https://blog.peter267.top',
+      },
+      {
+        name: '电教委员指南',
         description:
-          '极简的搜索起始页，聚合多引擎与常用站点，打开浏览器就能直接搜。',
-        link: 'https://simplesearch.rth1.xyz/',
+          '面向电教委员的开源指南项目，汇集多校设备维护与软件操作经验，隶属于智教联盟',
+        link: 'https://www.cnel.top',
       },
-      {
-        name: '智学网排名计算',
-        description: '根据智学网成绩单计算年级排名，省去手动对照的麻烦。',
-        link: 'https://simplesearch.rth1.xyz/zhixue',
-      },
-      {
-        name: '班级随机抽号器',
-        description: '课堂随机点名与抽号工具，老师上课可以直接用。',
-        link: 'https://simplesearch.rth1.xyz/random-psdture',
-      },
-      {
-        name: 'Markdown 笔记',
-        description: '浏览器内的 Markdown 编辑器，边写边渲染，无需安装。',
-        link: 'https://simplesearch.rth1.xyz/markdown.html',
-      },
-      {
-        name: 'CN-e-learning',
+	  {
+        name: 'Classworks Lite',
         description:
-          '面向电教委员的开源指南项目，汇集多校设备维护与软件操作经验，基于 VitePress 构建，隶属于智教联盟。',
-        link: 'https://github.com/Peter267',
+          '适用于班级大屏的作业板 · Serverless 部署版',
+        link: 'https://github.com/Peter267/ClassworksLite',
       },
       {
-        name: 'AppIcon Forge',
-        description: '在线 App 图标生成器，上传一张图即可产出多尺寸图标。',
-        link: 'https://icon.peter267.dpdns.org',
+        name: '智学网排名计算器',
+        description: '根据智学网成绩单计算年级排名，省去手动对照的麻烦',
+        link: 'https://zhixue.peter267.top',
+      },
+	  {
+        name: '足迹地图',
+        description: '一个展示个人旅行足迹的交互式地图应用',
+        link: 'https://github.com/Peter267/Footprint-Map',
+      },
+ 	  {
+        name: '图片主色调 API',
+        description: '一个基于 Python 构建的 Serverless API',
+        link: 'https://github.com/Peter267/color-api',
       },
     ],
   },
@@ -130,42 +130,12 @@ export const content = {
      ========================================================================== */
   friends: {
     title: '友情链接',
-    lead: '友链列表与申请入口。可通过页面下方「申请友链」提交信息。',
+    lead: '友链列表与申请入口。',
     items: [
       {
         name: 'Peter267 博客',
-        desc: '无限进步 · 主站',
-        url: 'https://peter267.github.io/',
-        avatar: '',
-      },
-      {
-        name: '备用博客',
-        desc: 'blog.peter267.me',
-        url: 'https://blog.peter267.me/',
-        avatar: '',
-      },
-      {
-        name: '导航站',
-        desc: '常用站点集合',
-        url: 'https://nav267.netlify.app',
-        avatar: '',
-      },
-      {
-        name: '说说',
-        desc: '即刻短文与碎片记录',
-        url: 'https://mm.peter267.dpdns.org',
-        avatar: '',
-      },
-      {
-        name: '安知鱼',
-        desc: '本博客所用 AnZhiYu 主题的作者',
-        url: 'https://blog.anheyu.com/',
-        avatar: '',
-      },
-      {
-        name: '开往',
-        desc: '随机访问一位独立博客作者',
-        url: 'https://www.travellings.cn/go.html',
+        desc: '无限进步',
+        url: 'https://blog.peter267.top',
         avatar: '',
       },
     ],
@@ -178,8 +148,8 @@ export const content = {
       info: [
         { label: '名称', value: 'Peter267' },
         { label: '简介', value: '一名学生、独立开发者、博主。' },
-        { label: '网站', value: 'https://peter267.github.io/' },
-        { label: '头像', value: 'https://peter267.github.io/assets/logo.svg' },
+        { label: '网站', value: 'https://peter267.top' },
+        { label: '头像', value: 'https://peter267.top' },
       ],
       rules: [
         '五项信息全部填满，一项为空则不通过。',
@@ -215,8 +185,8 @@ export const content = {
       },
       {
         name: 'Email',
-        handle: 'wujingbo12@qq.com',
-        url: 'mailto:wujingbo12@qq.com',
+        handle: 'wujingbo12@vip.qq.com',
+        url: 'mailto:wujingbo12@vip.qq.com',
         icon: 'Email',
       },
       {
@@ -241,7 +211,7 @@ export const content = {
      ========================================================================== */
   posts: {
     title: '最近文章',
-    lead: '来自博客的最新 6 篇，按发布时间倒序。',
+    lead: '来自博客的最新文章',
     feedUrl: 'https://blog.peter267.top/atom.xml',
     blogUrl: 'https://blog.peter267.top/',
     limit: 6,
@@ -260,7 +230,7 @@ export const content = {
     since: 2024,
     icp: '萌ICP备 20241711 号',
     icpUrl: 'https://icp.gov.moe/?keyword=20241711',
-    note: '本站由 Cloudflare Pages 提供静态托管',
+    note: '本站由 Vercel 提供静态托管',
   },
 };
 
@@ -275,7 +245,6 @@ export const routes = [
   { path: '/projects', label: '项目', name: 'projects' },
   { path: '/friends', label: '友情链接', name: 'friends' },
   { path: '/contact', label: '联系我', name: 'contact' },
-  // 原站 4 项顺序不变，文章页作为新增项放在最后
   { path: '/posts', label: '文章', name: 'posts' },
 ];
 
