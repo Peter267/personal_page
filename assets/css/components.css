@@ -616,6 +616,210 @@
 }
 
 /* ==========================================================================
+   6b. 经历时间轴
+   --------------------------------------------------------------------------
+   和其它列表（成就 / 文章）刻意区分开：
+     - 成就、文章用「1px 间隙当分隔线」的规整方阵，信息密度高；
+     - 时间轴要的是"沿一条线走下去"的叙事感，所以换成左侧竖轴 + 时间列。
+
+   三列网格：时间列（88px）─ 轴线（1px，由圆点所在列撑开）─ 正文。
+   轴线用 .timeline-item 的 ::before 逐条绘制，再用第一/最后一条
+   把两端渐隐掉 —— 比给容器画一条通栏线更好控制首尾。
+
+   ========================================================================== */
+
+.experience-section {
+  padding: var(--spacing-lg) 0;
+  margin: 0;
+}
+
+.timeline {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- 单条 ---------- */
+.timeline-item {
+  position: relative;
+  display: grid;
+  /* 时间列 | 节点列（轴线所在）| 正文 */
+  grid-template-columns: 88px 1px 1fr;
+  column-gap: 0;
+  padding-bottom: var(--spacing-lg);
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+/* ---------- 轴线 ----------
+   绝对定位铺满整条（含 padding-bottom），线才不会在条目之间断开。
+   如果改用 height:100% 的网格项，它只能撑满内容盒，
+   padding 那一段会留出空档，轴就变成虚线了。
+   位置对齐"节点列"：88px 宽的时间列之后，正好 left:88px。 */
+.timeline-item:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 88px;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+/* 第一条：上半段渐隐（线从虚无里来） */
+.timeline-item:first-child:before {
+  background: linear-gradient(to bottom, transparent 0, var(--border) 30px);
+}
+
+/* 最后一条：只画到圆点下方一点，线到最后一个节点为止，不往下拖 */
+.timeline-item:last-child:before {
+  bottom: auto;
+  height: 30px;
+  background: linear-gradient(to bottom, var(--border) 0, transparent 100%);
+}
+
+/* ---------- 时间列 ---------- */
+.timeline-period-col {
+  grid-column: 1;
+  grid-row: 1;
+  /* 和圆点首行对齐：圆点 9px，文字 12px，视觉上要把基线对到圆点中线 */
+  padding-top: 1px;
+  padding-right: var(--spacing-md);
+  text-align: right;
+}
+
+.timeline-period {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  /* 时间段里的破折号两侧不希望断行，靠 nowrap 挡住 */
+  white-space: nowrap;
+  transition: color 0.25s var(--ease-out);
+}
+
+/* ---------- 轴上的节点 ---------- */
+.timeline-dot {
+  grid-column: 2;
+  grid-row: 1;
+  /* 9px 圆点在 1px 的列里居中并溢出两侧，正好骑在轴线上 */
+  justify-self: center;
+  align-self: start;
+  /* 关键：轴线是绝对定位的 ::before，默认会盖在静态定位的圆点之上，
+     结果"空心"节点会被一条线从中间劈开。
+     抬高圆点层级（position:relative + z-index:1）让线从圆点后面穿过。 */
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s var(--ease-out),
+    background 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+}
+
+/* 实心主色圆点：只给"至今"这种正在进行的节点。
+   全篇都实心会失去重点，全是空心又太平。 */
+.timeline-item-current .timeline-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.timeline-item-current .timeline-period {
+  color: var(--accent);
+}
+
+/* ---------- 正文 ---------- */
+.timeline-body {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  /* 和轴拉开距离，文字不要贴线 */
+  padding-left: var(--spacing-md);
+}
+
+.timeline-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.timeline-title {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.timeline-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 1px 7px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  /* 微调：让标签和标题基线看起来更齐 */
+  transform: translateY(-1px);
+}
+
+.timeline-desc {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.timeline-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.timeline-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-radius: var(--radius-xs);
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+}
+
+/* 底部备注：与成就 / 文章页同一层级（右对齐、等宽小字、低对比） */
+.timeline-note {
+  margin-top: var(--spacing-sm);
+  text-align: right;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+/* 悬停：只让节点亮起来，整条不加底色、不加位移 —— 和其它列表的克制一致 */
+.timeline-item:hover .timeline-dot {
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
    7. 文章列表
    --------------------------------------------------------------------------
    结构：固定宽度日期列 + 标题/摘要。
@@ -1002,6 +1206,55 @@
 
   .social-handle {
     font-size: 10px;
+  }
+}
+
+/* ---------- 10.1 经历时间轴 ----------
+   断点和 .post-item 保持一致（600px）。
+   88px 的时间列在 600 以下会吃掉正文近 1/4 宽度，
+   中文标题会被挤成两三个字一行，所以改为单列：
+   时间挪到正文上方当小标题，轴线整体左移贴到容器边。
+   （放在这里而不是跟 6b 紧挨着，是为了让全站断点集中在一节里，
+     顺序仍满足"宽 → 窄"的层叠约定。） */
+@media (width <= 600px) {
+  .timeline-item {
+    grid-template-columns: 1px 1fr;
+    /* 时间行在上、正文行在下 */
+    grid-template-rows: auto auto;
+    padding-bottom: var(--spacing-md);
+  }
+
+  /* 轴线对齐到 1px 的节点列（该列从容器左边起算） */
+  .timeline-item:before {
+    left: 0;
+  }
+
+  .timeline-period-col {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0 0 4px var(--spacing-md);
+    text-align: left;
+  }
+
+  .timeline-dot {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 5px;
+  }
+
+  .timeline-body {
+    grid-column: 2;
+    grid-row: 2;
+    padding-left: var(--spacing-md);
+  }
+
+  .timeline-title {
+    font-size: 15px;
+  }
+
+  .timeline-desc {
+    font-size: 13px;
+    line-height: 1.65;
   }
 }
 

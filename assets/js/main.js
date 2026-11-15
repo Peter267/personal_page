@@ -191,6 +191,54 @@ function tplAchievements() {
     </div>`;
 }
 
+/** 经历页（时间轴） */
+function tplExperience() {
+  const { experience } = content;
+
+  const items = experience.items
+    .map((e) => {
+      const tags = (e.tags || [])
+        .map((t) => `<span class="timeline-tag">${esc(t)}</span>`)
+        .join('');
+
+      return `
+      <li class="timeline-item${e.current ? ' timeline-item-current' : ''}">
+        <div class="timeline-period-col">
+          <span class="timeline-period">${esc(e.period)}</span>
+        </div>
+        <span class="timeline-dot" aria-hidden="true"></span>
+        <div class="timeline-body">
+          <div class="timeline-head">
+            <h2 class="timeline-title">${esc(e.title)}</h2>
+            ${
+              e.role
+                ? `<span class="timeline-role">${esc(e.role)}</span>`
+                : ''
+            }
+          </div>
+          <p class="timeline-desc">${esc(e.desc)}</p>
+          ${tags ? `<div class="timeline-tags">${tags}</div>` : ''}
+        </div>
+      </li>`;
+    })
+    .join('');
+
+  const note = experience.note
+    ? `<p class="timeline-note">${esc(experience.note)}</p>`
+    : '';
+
+  return `
+    <div class="page container">
+      <section class="experience-section" id="experience">
+        ${label('EXPERIENCE')}
+        <h1 class="section-title">${esc(experience.title)}</h1>
+        <p class="section-lead">${esc(experience.lead)}</p>
+        <ol class="timeline">${items}</ol>
+        ${note}
+      </section>
+    </div>`;
+}
+
 /** 友链页（列表） */
 function tplFriends() {
   const { friends } = content;
@@ -278,6 +326,7 @@ const TEMPLATES = {
   posts: tplPosts,
   projects: tplProjects,
   achievements: tplAchievements,
+  experience: tplExperience,
   friends: tplFriends,
   contact: tplContact,
 };
