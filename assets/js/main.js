@@ -11,8 +11,8 @@
  *   content.js  数据
  *   labels.js   原站 section-label 矢量标签
  *   icons.js    原站社交图标
- *   shader.js   渐变 + 散射光背景（首屏兜底层）
- *   runner.js   3D 奔跑线框人形（首屏主视觉）
+ *   shader.js   首屏动态纹路（Paper GrainGradient）
+ *   logo.js     首屏 RobotoFlex 字标矢量路径
  *   *.css       样式
  *   本文件      渲染 + 事件 + 路由
  * ============================================================================
@@ -20,7 +20,7 @@
 
 import { content, routes, currentYear } from './content.js';
 import { createBackground } from './shader.js';
-import { createRunner, canRun3D } from './runner.js';
+import { logoSvg } from './logo.js';
 import { sectionLabels } from './labels.js';
 import { socialIcons } from './icons.js';
 
@@ -85,15 +85,12 @@ function tplHome() {
 
         <div class="hero-content">
           <div class="intro-left">
-            <img
-              class="hero-avatar"
-              id="hero-avatar"
-              src="./assets/img/avatar-512.webp"
-              width="512"
-              height="512"
-              alt="${esc(hero.name)}"
-              fetchpriority="high"
-            />
+            <div
+              class="hero-logo"
+              id="hero-logo"
+              role="img"
+              aria-label="${esc(hero.name)}"
+            >${logoSvg}</div>
           </div>
 
           <div class="intro-right">
@@ -469,43 +466,18 @@ function mountHome() {
   const bio = document.getElementById('intro-bio');
   const chips = Array.from(document.querySelectorAll('.hero-chip'));
 
-  const theme = document.documentElement.getAttribute('data-theme') || 'dark';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     .matches;
 
   let bg = null;
-  let runner = null;
 
   if (shaderHost) {
     const canvas = document.createElement('canvas');
     shaderHost.appendChild(canvas);
 
-    bg = createBackground(canvas, {
-      accent: content.site.accent,
-      theme,
-      reducedMotion,
-    });
-
-    if (bg?.fallback) {
-      shaderHost.style.background =
-        'radial-gradient(ellipse 90% 70% at 30% 100%, rgba(0,255,136,.20), transparent 62%), ' +
-        'radial-gradient(ellipse 70% 60% at 78% 70%, rgba(0,133,88,.16), transparent 66%), #000';
-    }
+    bg = createBackground(canvas, { reducedMotion });
 
     bgInstance = bg;
-
-    /* 渐变背景先顶上（0 请求、立即出图），3D 奔跑人形在后台加载，
-       就绪后再淡入覆盖，失败就维持渐变 —— 首屏永远不会白屏。 */
-    if (!reducedMotion && canRun3D()) {
-      runner = createRunner(shaderHost, {
-        theme,
-        onReady: () => bg?.pause?.(),
-      });
-      runnerInstance = runner;
-      runner.ready.catch(() => {
-        if (runnerInstance === runner) runnerInstance = null;
-      });
-    }
   }
 
   requestAnimationFrame(() => {
@@ -516,8 +488,6 @@ function mountHome() {
   });
 
   return () => {
-    if (runner) runner.destroy();
-    if (runnerInstance === runner) runnerInstance = null;
     if (bg) bg.destroy();
     if (bgInstance === bg) bgInstance = null;
   };
@@ -637,7 +607,6 @@ function mountPosts() {
 
 const THEME_KEY = 'theme';
 let bgInstance = null;
-let runnerInstance = null;
 
 function applyTheme(theme, persist = false) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -654,7 +623,6 @@ function applyTheme(theme, persist = false) {
   }
 
   if (bgInstance?.setTheme) bgInstance.setTheme(theme);
-  if (runnerInstance?.setTheme) runnerInstance.setTheme(theme);
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
