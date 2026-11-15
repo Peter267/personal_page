@@ -4,7 +4,6 @@
    严格对齐 apanzinc.top 的组件实现：
      Hero（左下大 logo + 右下简介 + chips）
      卡片家族（project / friend / social / achievement）
-     友链申请弹窗
      主内容进入动画
    ========================================================================== */
 
@@ -340,6 +339,7 @@
 .friend-name:before {
   content: "@";
   color: var(--accent);
+  margin-right: 8px;
 }
 
 .friend-desc {
@@ -421,287 +421,6 @@
   border-color: var(--accent);
 }
 
-/* ---------- 申请友链 ---------- */
-.apply-section {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-xl);
-  border-top: 1px solid var(--border);
-}
-
-.apply-title {
-  font-family: var(--font-sans);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-sm);
-  letter-spacing: -0.02em;
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-weight: 550;
-  line-height: 1.3;
-}
-
-.apply-lead {
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-lg);
-  font-size: clamp(14px, 1.2vw, 16px);
-  font-weight: 400;
-  line-height: 1.7;
-}
-
-.apply-grid {
-  gap: var(--spacing-md);
-  grid-template-columns: 1fr 1fr;
-  display: grid;
-}
-
-.apply-card {
-  flex-direction: column;
-  display: flex;
-}
-
-.apply-card-label {
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  margin-bottom: 12px;
-  font-size: 13px;
-}
-
-.apply-info-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-md);
-  flex: 1;
-  position: relative;
-}
-
-.copy-btn {
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  opacity: 0;
-  padding: 4px 12px;
-  font-size: 12px;
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
-
-.apply-info-card:hover .copy-btn {
-  opacity: 1;
-}
-
-.copy-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.apply-info-row {
-  color: var(--text-primary);
-  word-break: break-all;
-  gap: 12px;
-  font-size: 14px;
-  line-height: 1.8;
-  display: flex;
-}
-
-.apply-info-row + .apply-info-row {
-  margin-top: 10px;
-}
-
-.apply-info-label {
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  flex-shrink: 0;
-  min-width: 36px;
-}
-
-.apply-info-num {
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  text-align: center;
-  flex-shrink: 0;
-  min-width: 36px;
-}
-
-.apply-info-url {
-  font-family: var(--font-mono);
-  font-size: 13px;
-}
-
-.apply-rules-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-md);
-  flex: 1;
-}
-
-.apply-footer {
-  margin-top: var(--spacing-lg);
-  justify-content: flex-end;
-  display: flex;
-}
-
-.apply-btn {
-  font-size: 14px;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  display: inline-flex;
-}
-
-.apply-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--bg-hover);
-}
-
-/* ---------- 友链申请弹窗 ---------- */
-.modal-overlay {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  background: #000000b3;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 40px 16px;
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.modal-overlay.is-open {
-  display: flex;
-}
-
-.modal-container {
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  width: 100%;
-  max-width: 400px;
-  max-height: calc(100vh - 80px);
-  position: relative;
-  overflow: hidden auto;
-  box-shadow: 0 24px 80px #0006;
-}
-
-.modal-header-bar {
-  z-index: 10;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  display: flex;
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-
-.modal-header-title {
-  height: 36px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--font-mono);
-  white-space: nowrap;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  align-items: center;
-  padding: 0 12px;
-  display: flex;
-}
-
-.title-slash {
-  color: var(--accent);
-  margin-right: 4px;
-}
-
-.modal-close {
-  border-radius: var(--radius-sm);
-  width: 36px;
-  height: 36px;
-  color: var(--text-tertiary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  justify-content: center;
-  align-items: center;
-  display: flex;
-}
-
-.modal-close:hover {
-  color: var(--text-primary);
-  border-color: var(--accent);
-  background: var(--bg-hover);
-}
-
-/* 原站用飞书 iframe；这里改为同尺寸的表单，提交后走邮件 */
-.apply-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 64px var(--spacing-md) var(--spacing-md);
-}
-
-.apply-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.apply-field label {
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-
-.apply-field input,
-.apply-field textarea {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color var(--transition-fast);
-  resize: vertical;
-}
-
-.apply-field input:focus,
-.apply-field textarea:focus {
-  border-color: var(--accent);
-}
-
-.apply-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 4px;
-}
-
-.modal-form-tip {
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 0;
-}
-
 @media (width <= 768px) {
   .friend-error {
     padding: var(--spacing-sm) var(--spacing-md);
@@ -715,30 +434,6 @@
     padding: 6px 16px;
     font-size: 12px;
   }
-
-  .modal-overlay {
-    padding: 16px;
-  }
-
-  .modal-container {
-    max-width: 100%;
-    max-height: calc(100vh - 32px);
-  }
-
-  .modal-header-title {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 12px;
-  }
-
-  .modal-close {
-    width: 32px;
-    height: 32px;
-  }
-
-  .apply-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (width <= 480px) {
@@ -749,11 +444,6 @@
 
   .friend-desc {
     font-size: 11px;
-  }
-
-  .apply-btn {
-    padding: 8px 20px;
-    font-size: 13px;
   }
 }
 

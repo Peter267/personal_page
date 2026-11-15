@@ -544,10 +544,8 @@ function fallbackHandle() {
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{ reducedMotion?: boolean }} [options]
  */
-export function createBackground(canvas, options = {}) {
-  const reducedMotion = !!options.reducedMotion;
+export function createBackground(canvas) {
   const gl = canvas.getContext('webgl2', {
     alpha: true,
     premultipliedAlpha: true,
@@ -676,7 +674,6 @@ export function createBackground(canvas, options = {}) {
       canvas.height = canvasHeight;
       gl.viewport(0, 0, canvasWidth, canvasHeight);
       resolutionDirty = true;
-      if (reducedMotion) render(performance.now());
     }
   }
 
@@ -705,10 +702,6 @@ export function createBackground(canvas, options = {}) {
 
   function start() {
     if (disposed || !texture || running || manualPaused) return;
-    if (reducedMotion) {
-      render(performance.now());
-      return;
-    }
     running = true;
     lastTime = 0;
     rafId = requestAnimationFrame(loop);
@@ -768,8 +761,7 @@ export function createBackground(canvas, options = {}) {
     gl.uniform1i(locations.u_noiseTexture, 0);
 
     resize();
-    if (reducedMotion) render(performance.now());
-    else start();
+    start();
   };
   image.onerror = () => {
     if (disposed) return;

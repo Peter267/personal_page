@@ -472,6 +472,20 @@ section {
   flex-shrink: 0;
 }
 
+/* 页脚署名：说明视觉设计参考来源 */
+.footer-credit {
+  color: var(--text-tertiary);
+}
+
+.footer-credit a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-credit a:hover {
+  color: var(--accent);
+}
+
 .footer-right {
   text-align: right;
   flex: auto;

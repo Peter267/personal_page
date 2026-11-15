@@ -5,7 +5,6 @@
  *   - 启动页进度条 + 收尾事件
  *   - hash 路由（静态站避免刷新 404）
  *   - 原站四个页面 + 独立「文章」页
- *   - 友链申请弹窗
  *
  * 职责划分：
  *   content.js  数据
@@ -192,10 +191,9 @@ function tplAchievements() {
     </div>`;
 }
 
-/** 友链页（列表 + 申请须知 + 申请弹窗） */
+/** 友链页（列表） */
 function tplFriends() {
   const { friends } = content;
-  const apply = friends.apply || {};
 
   const cards = friends.items
     .map((f) => {
@@ -217,28 +215,6 @@ function tplFriends() {
     })
     .join('');
 
-  const infoRows = (apply.info || [])
-    .map(
-      (row) => `
-      <div class="apply-info-row">
-        <span class="apply-info-label">${esc(row.label)}</span>
-        <span class="${row.label === '头像' ? 'apply-info-url' : ''}">${esc(
-        row.value
-      )}</span>
-      </div>`
-    )
-    .join('');
-
-  const rules = (apply.rules || [])
-    .map(
-      (r, i) => `
-      <div class="apply-info-row">
-        <span class="apply-info-num">0${i + 1}</span>
-        <span>${esc(r)}</span>
-      </div>`
-    )
-    .join('');
-
   return `
     <div class="page container">
       <section class="friend-section" id="friends">
@@ -247,70 +223,7 @@ function tplFriends() {
         <p class="section-lead">${esc(friends.lead)}</p>
 
         <div class="friend-grid">${cards}</div>
-
-        <div class="apply-section">
-          <h2 class="apply-title">${esc(apply.title)}</h2>
-          <p class="apply-lead">${esc(apply.lead)}</p>
-
-          <div class="apply-grid">
-            <div class="apply-card">
-              <p class="apply-card-label">${esc(apply.myLabel)}</p>
-              <div class="apply-info-card">
-                <button class="copy-btn" type="button" data-copy-friend>复制</button>
-                ${infoRows}
-              </div>
-            </div>
-
-            <div class="apply-card">
-              <p class="apply-card-label">${esc(apply.rulesLabel)}</p>
-              <div class="apply-rules-card">${rules}</div>
-            </div>
-          </div>
-
-          <div class="apply-footer">
-            <button class="apply-btn" type="button" data-open-apply>${esc(
-              apply.submitLabel
-            )}</button>
-          </div>
-        </div>
       </section>
-
-      <!-- 申请弹窗：原站是飞书 iframe，这里换成同尺寸表单，提交后走邮件 -->
-      <div class="modal-overlay" id="apply-modal" aria-hidden="true">
-        <div class="modal-container" role="dialog" aria-modal="true" aria-label="友情链接申请">
-          <div class="modal-header-bar">
-            <span class="modal-header-title"><span class="title-slash">//</span> 友情链接申请</span>
-            <button class="modal-close" type="button" data-close-apply aria-label="关闭">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-
-          <form class="apply-form" id="apply-form">
-            <div class="apply-field">
-              <label for="apply-name">名称</label>
-              <input id="apply-name" name="name" type="text" maxlength="40" required />
-            </div>
-            <div class="apply-field">
-              <label for="apply-url">网站</label>
-              <input id="apply-url" name="url" type="url" placeholder="https://" required />
-            </div>
-            <div class="apply-field">
-              <label for="apply-desc">简介</label>
-              <input id="apply-desc" name="desc" type="text" maxlength="80" required />
-            </div>
-            <div class="apply-field">
-              <label for="apply-avatar">头像</label>
-              <input id="apply-avatar" name="avatar" type="url" placeholder="https://" />
-            </div>
-            <p class="modal-form-tip">提交后会打开邮件客户端，把信息发送到 ${esc(
-              apply.mailto
-            )}。</p>
-            <div class="apply-form-actions">
-              <button class="apply-btn" type="submit">发送申请</button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>`;
 }
 
@@ -466,16 +379,13 @@ function mountHome() {
   const bio = document.getElementById('intro-bio');
   const chips = Array.from(document.querySelectorAll('.hero-chip'));
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    .matches;
-
   let bg = null;
 
   if (shaderHost) {
     const canvas = document.createElement('canvas');
     shaderHost.appendChild(canvas);
 
-    bg = createBackground(canvas, { reducedMotion });
+    bg = createBackground(canvas);
 
     bgInstance = bg;
   }
@@ -740,116 +650,6 @@ function applySiteMeta() {
 }
 
 /* ============================================================================
-   9. 复制 / 友链申请弹窗
-   ============================================================================ */
-
-function buildFriendCopy() {
-  const apply = content.friends.apply || {};
-  return (apply.info || []).map((row) => `${row.label}：${row.value}`).join('\n');
-}
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
-
-function bindCopyButtons() {
-  document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-copy], [data-copy-friend]');
-    if (!btn) return;
-
-    const text = btn.hasAttribute('data-copy-friend')
-      ? buildFriendCopy()
-      : btn.dataset.copy;
-    const original = btn.textContent;
-    const ok = await copyText(text);
-
-    btn.textContent = ok ? '已复制' : '失败';
-    btn.style.opacity = '1';
-    setTimeout(() => {
-      btn.textContent = original;
-    }, 1600);
-  });
-}
-
-function openApplyModal() {
-  const modal = document.getElementById('apply-modal');
-  if (!modal) return;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('apply-name')?.focus(), 50);
-}
-
-function closeApplyModal() {
-  const modal = document.getElementById('apply-modal');
-  if (!modal) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
-function submitApplyForm(e) {
-  e.preventDefault();
-
-  const form = e.currentTarget;
-  const data = new FormData(form);
-  const mailto = content.friends.apply?.mailto || content.contact?.email;
-  const subject = `友情链接申请 - ${data.get('name') || ''}`;
-  const body = [
-    `名称：${data.get('name') || ''}`,
-    `网站：${data.get('url') || ''}`,
-    `简介：${data.get('desc') || ''}`,
-    `头像：${data.get('avatar') || ''}`,
-  ].join('\n');
-
-  window.location.href = `mailto:${mailto}?subject=${encodeURIComponent(
-    subject
-  )}&body=${encodeURIComponent(body)}`;
-  closeApplyModal();
-}
-
-function bindApplyModal() {
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-open-apply]')) {
-      openApplyModal();
-      return;
-    }
-
-    if (e.target.closest('[data-close-apply]')) {
-      closeApplyModal();
-      return;
-    }
-
-    const modal = document.getElementById('apply-modal');
-    if (modal && e.target === modal) closeApplyModal();
-  });
-
-  document.addEventListener('submit', (e) => {
-    if (e.target.id === 'apply-form') submitApplyForm(e);
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeApplyModal();
-  });
-}
-
-/* ============================================================================
    10. 启动
    ============================================================================ */
 
@@ -863,8 +663,6 @@ function boot() {
   });
 
   bindMobileMenu();
-  bindCopyButtons();
-  bindApplyModal();
 
   window.addEventListener('hashchange', renderRoute);
   renderRoute();
