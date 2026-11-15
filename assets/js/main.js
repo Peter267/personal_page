@@ -191,33 +191,93 @@ function tplAchievements() {
     </div>`;
 }
 
-/** 经历页（时间轴） */
+/** 经历页（横向数轴） */
 function tplExperience() {
   const { experience } = content;
+  const items = experience.items || [];
 
-  const items = experience.items
+  // ---- 数轴范围 ----
+  // 优先用配置里的 from/to；没配就从条目里取 min/max，保证新加条目不会画出轴外。
+  const starts = items.map((e) => Number(e.from)).filter((n) => Number.isFinite(n));
+  const ends = items
+    .map((e) => (e.to == null ? NaN : Number(e.to)))
+    .filter((n) => Number.isFinite(n));
+  const axisFrom = Number.isFinite(Number(experience.from))
+    ? Number(experience.from)
+    : Math.min(...starts);
+  // "至今"的条目以轴的右端为终点，所以轴的末端要取配置值或最后一条的起点
+  const axisTo = Number.isFinite(Number(experience.to))
+    ? Number(experience.to)
+    : Math.max(...ends, ...starts);
+  const span = axisTo - axisFrom || 1;
+  const pct = (year) => ((year - axisFrom) / span) * 100;
+
+  // ---- 刻度 ----
+  const ticks =
+    Array.isArray(experience.ticks) && experience.ticks.length
+      ? experience.ticks.map(Number).filter(Number.isFinite)
+      : Array.from(
+          { length: Math.floor(span) + 1 },
+          (_, i) => Math.floor(axisFrom) + i
+        );
+
+  const ticksHTML = ticks
+    .map((t, i) => {
+      const p = pct(t);
+      // 首尾刻度贴边时，文字要向内收，否则会被容器裁掉
+      const edge =
+        i === 0 ? ' tick-first' : i === ticks.length - 1 ? ' tick-last' : '';
+      return `<span class="axis-tick${edge}" style="--p:${p.toFixed(
+        4
+      )}%">${esc(String(t))}</span>`;
+    })
+    .join('');
+
+  // 竖向网格线：把每个刻度往下引一条淡线，贯穿所有条目区。
+  // 有了它，"这条横条跨过了 2024 吗"才能一眼读出来。
+  const gridHTML = ticks
+    .map(
+      (t) =>
+        `<span class="axis-gridline" style="--p:${pct(t).toFixed(
+          4
+        )}%" aria-hidden="true"></span>`
+    )
+    .join('');
+
+  // ---- 条目 ----
+  const rows = items
     .map((e) => {
+      const from = Number(e.from);
+      const open = e.to == null; // 至今：横条开口
+      const to = open ? axisTo : Number(e.to);
+      const left = pct(Math.max(from, axisFrom));
+      const right = pct(Math.min(to, axisTo));
+      const width = Math.max(right - left, 0);
+
       const tags = (e.tags || [])
         .map((t) => `<span class="timeline-tag">${esc(t)}</span>`)
         .join('');
 
       return `
-      <li class="timeline-item${e.current ? ' timeline-item-current' : ''}">
-        <div class="timeline-period-col">
-          <span class="timeline-period">${esc(e.period)}</span>
-        </div>
-        <span class="timeline-dot" aria-hidden="true"></span>
-        <div class="timeline-body">
+      <li class="timeline-item${e.current ? ' timeline-item-current' : ''}${
+        open ? ' timeline-item-open' : ''
+      }">
+        <div class="timeline-info">
           <div class="timeline-head">
             <h2 class="timeline-title">${esc(e.title)}</h2>
             ${
-              e.role
-                ? `<span class="timeline-role">${esc(e.role)}</span>`
-                : ''
+              e.role ? `<span class="timeline-role">${esc(e.role)}</span>` : ''
             }
+            <span class="timeline-period">${esc(e.period)}</span>
           </div>
-          <p class="timeline-desc">${esc(e.desc)}</p>
+          <p class="timeline-desc" title="${esc(e.desc)}">${esc(e.desc)}</p>
           ${tags ? `<div class="timeline-tags">${tags}</div>` : ''}
+        </div>
+
+        <div class="timeline-axis-cell" aria-hidden="true">
+          <span class="timeline-bar" style="--l:${left.toFixed(
+            4
+          )}%;--w:${width.toFixed(4)}%"></span>
         </div>
       </li>`;
     })
@@ -233,7 +293,18 @@ function tplExperience() {
         ${label('EXPERIENCE')}
         <h1 class="section-title">${esc(experience.title)}</h1>
         <p class="section-lead">${esc(experience.lead)}</p>
-        <ol class="timeline">${items}</ol>
+
+        <div class="axis" role="group" aria-label="时间数轴">
+          <div class="axis-head">
+            <span class="axis-head-label">年份</span>
+            <div class="axis-ticks">${ticksHTML}</div>
+          </div>
+          <div class="axis-body">
+            <div class="axis-grid" aria-hidden="true">${gridHTML}</div>
+            <ol class="axis-list">${rows}</ol>
+          </div>
+        </div>
+
         ${note}
       </section>
     </div>`;
