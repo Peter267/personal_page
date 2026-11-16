@@ -15,6 +15,10 @@ shots/
 tools/*
 # 验收脚本例外：README 里让维护者跑的，必须入库
 !tools/verify.cjs
+# 纹理兼容性取证/回归脚本：本轮"部分浏览器不显示"问题的可复现依据
+!tools/extract-shader.cjs
+!tools/shader-matrix.cjs
+!tools/shader-nav.cjs
 
 # ---- 系统与缓存文件 ----
 .DS_Store
