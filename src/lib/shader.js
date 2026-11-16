@@ -478,7 +478,16 @@ void main() {
   fragColor = vec4(color, opacity);
 }`;
 
-const NOISE_URL = './assets/img/grain-noise.png';
+/* 噪声贴图地址。
+   原来是 './assets/img/grain-noise.png' —— 相对路径在"单页 hash 路由"下侥幸能用，
+   但改成真实 URL（/projects/ 这类嵌套路径）后会被解析成 /projects/assets/… 而 404，
+   着色器直接退化成 CSS 兜底。
+   现在统一用 BASE_URL 拼绝对路径：既适配根路径部署，也适配子目录部署
+   （GitHub Pages 项目站那种 /repo/ 前缀）。 */
+const NOISE_URL = `${import.meta.env.BASE_URL}assets/img/grain-noise.png`.replace(
+  /([^:]\/)\/+/g,
+  '$1'
+);
 const MAX_PIXEL_COUNT = 1920 * 1080 * 4;
 const MIN_PIXEL_RATIO = 2;
 
@@ -542,10 +551,31 @@ function fallbackHandle() {
   };
 }
 
+/** 是否偏好减少动效。取不到 matchMedia 时按"不减少"处理，保持原视觉。 */
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * @param {HTMLCanvasElement} canvas
  */
 export function createBackground(canvas) {
+  const host = canvas.parentElement;
+
+  /* 兜底必须在这里定义，且 host 必须在这一行之前取到。
+     曾经的 bug：`if (!gl) return fallbackHandle()` 直接返回，没有调用
+     applyCssFallback()，导致所有拿不到 WebGL2 的浏览器（老 Safari、
+     禁用了硬件加速、部分移动端 WebView）看到的是**全黑背景**，
+     而不是渐变兜底。这个分支是线上"部分浏览器纹理不显示"的根因。 */
+  function applyCssFallback() {
+    canvas.style.display = 'none';
+    if (host) host.style.background = FALLBACK_BG;
+  }
+
   const gl = canvas.getContext('webgl2', {
     alpha: true,
     premultipliedAlpha: true,
@@ -555,9 +585,12 @@ export function createBackground(canvas) {
     powerPreference: 'high-performance',
   });
 
-  if (!gl) return fallbackHandle();
+  if (!gl) {
+    console.info('[shader] 当前浏览器不支持 WebGL2，改用静态渐变兜底');
+    applyCssFallback();
+    return fallbackHandle();
+  }
 
-  const host = canvas.parentElement;
   let program = null;
   let quad = null;
   let texture = null;
@@ -571,11 +604,6 @@ export function createBackground(canvas) {
   let manualPaused = false;
   let disposed = false;
   let image = null;
-
-  function applyCssFallback() {
-    canvas.style.display = 'none';
-    if (host) host.style.background = FALLBACK_BG;
-  }
 
   function uniform(name) {
     const loc = gl.getUniformLocation(program, name);
@@ -761,7 +789,14 @@ export function createBackground(canvas) {
     gl.uniform1i(locations.u_noiseTexture, 0);
 
     resize();
-    start();
+
+    // 减少动效偏好：只画首帧静态图，保持视觉但不消耗持续 GPU。
+    // 曾经没有这个分支，等于无视用户的系统级无障碍设置。
+    if (prefersReducedMotion()) {
+      render(0);
+    } else {
+      start();
+    }
   };
   image.onerror = () => {
     if (disposed) return;
@@ -773,9 +808,38 @@ export function createBackground(canvas) {
 
   function onVisibility() {
     if (document.hidden) stop();
-    else if (!manualPaused) start();
+    else if (!manualPaused && !prefersReducedMotion()) start();
   }
   document.addEventListener('visibilitychange', onVisibility);
+
+  /* 上下文丢失：移动端切后台、GPU 驱动重置、系统内存紧张时会发生。
+     不处理的话画布会永久变黑且不再恢复 —— 这也是"有时不显示"的一类。
+     这里退化为静态 CSS 渐变，保证背景始终可见。 */
+  function onContextLost(e) {
+    e.preventDefault(); // 阻止默认行为，浏览器才可能恢复
+    stop();
+    console.warn('[shader] WebGL 上下文丢失，改用 CSS 兜底');
+    applyCssFallback();
+  }
+  canvas.addEventListener('webglcontextlost', onContextLost, false);
+
+  /* 尺寸变化：原实现只暴露 resize 却没人调用，窗口缩放或横竖屏切换后
+     画布分辨率会与实际显示尺寸脱节，纹理被拉伸/裁切甚至完全错位。 */
+  let resizeRaf = null;
+  function onResize() {
+    if (resizeRaf !== null) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = null;
+      if (disposed) return;
+      resize();
+      if (prefersReducedMotion()) render(currentFrame);
+    });
+  }
+  window.addEventListener('resize', onResize, { passive: true });
+  window.addEventListener('orientationchange', onResize, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onResize, { passive: true });
+  }
 
   return {
     fallback: false,
@@ -785,6 +849,16 @@ export function createBackground(canvas) {
     resize,
     destroy() {
       document.removeEventListener('visibilitychange', onVisibility);
+      canvas.removeEventListener('webglcontextlost', onContextLost, false);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', onResize);
+      }
+      if (resizeRaf !== null) {
+        cancelAnimationFrame(resizeRaf);
+        resizeRaf = null;
+      }
       dispose(true);
     },
     pause,

@@ -1,0 +1,146 @@
+---
+/**
+ * experience.astro — 「经历」页：横向数轴
+ * ----------------------------------------------------------------------------
+ * 从原 main.js 的 tplExperience() 迁移。
+ *
+ * 这一页的核心是坐标系必须自洽：
+ *   刻度行、网格线、横条三者共用同一个 pct() 映射，
+ *   任何一处换了基准（例如把横条放进"右侧 53% 宽的列"）都会整体漂移。
+ *
+ * 横条宽度 = (to - from) / span * 100%，不用 transform:scaleX，
+ * 因为缩放会把条内文字一起横向拉扁。
+ */
+import Base from '../layouts/Base.astro';
+import SectionLabel from '../components/SectionLabel.astro';
+import { content } from '../lib/content.js';
+
+const { experience } = content;
+const items = experience.items || [];
+
+/* ---- 数轴范围 ----
+   优先用配置里的 from/to；没配就从条目里取 min/max。 */
+const starts = items.map((e) => Number(e.from)).filter(Number.isFinite);
+const ends = items
+  .map((e) => (e.to == null ? NaN : Number(e.to)))
+  .filter(Number.isFinite);
+
+const axisFrom = Number.isFinite(Number(experience.from))
+  ? Number(experience.from)
+  : Math.min(...starts);
+
+/* "至今"的条目以轴的右端为终点，所以轴末端要取配置值或最后一条的起点 */
+const axisTo = Number.isFinite(Number(experience.to))
+  ? Number(experience.to)
+  : Math.max(...ends, ...starts);
+
+const span = axisTo - axisFrom || 1;
+const pct = (year) => ((year - axisFrom) / span) * 100;
+
+/* ---- 刻度 ---- */
+const ticks =
+  Array.isArray(experience.ticks) && experience.ticks.length
+    ? experience.ticks.map(Number).filter(Number.isFinite)
+    : Array.from({ length: Math.floor(span) + 1 }, (_, i) => Math.floor(axisFrom) + i);
+
+/* ---- 条目：预先算好位置，模板里只负责输出 ---- */
+const rows = items.map((e) => {
+  const from = Number(e.from);
+  const open = e.to == null; // 至今：横条开口
+  const to = open ? axisTo : Number(e.to);
+  const left = pct(Math.max(from, axisFrom));
+  const right = pct(Math.min(to, axisTo));
+  const width = Math.max(right - left, 0);
+
+  return {
+    ...e,
+    open,
+    left: left.toFixed(4),
+    width: width.toFixed(4),
+  };
+});
+---
+
+<Base title="经历 · Peter267" description="Peter267 从折腾到创造的时间线：每段横条的长度就是那段时间的跨度。" pageName="experience">
+  <div class="page container">
+    <section class="experience-section" id="experience">
+      <SectionLabel name="EXPERIENCE" />
+      <h1 class="section-title">{experience.title}</h1>
+      <p class="section-lead">{experience.lead}</p>
+
+      <div class="axis" role="group" aria-label="时间数轴">
+        <div class="axis-head">
+          <span class="axis-head-label">年份</span>
+          <div class="axis-ticks">
+            {
+              ticks.map((t, i) => (
+                <span
+                  class:list={[
+                    'axis-tick',
+                    {
+                      'tick-first': i === 0,
+                      'tick-last': i === ticks.length - 1,
+                    },
+                  ]}
+                  style={`--p:${pct(t).toFixed(4)}%`}
+                >
+                  {t}
+                </span>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="axis-body">
+          <div class="axis-grid" aria-hidden="true">
+            {
+              ticks.map((t) => (
+                <span class="axis-gridline" style={`--p:${pct(t).toFixed(4)}%`} />
+              ))
+            }
+          </div>
+
+          <ol class="axis-list">
+            {
+              rows.map((e) => (
+                <li
+                  class:list={[
+                    'timeline-item',
+                    {
+                      'timeline-item-current': e.current,
+                      'timeline-item-open': e.open,
+                    },
+                  ]}
+                >
+                  <div class="timeline-info">
+                    <div class="timeline-head">
+                      <h2 class="timeline-title">{e.title}</h2>
+                      {e.role && <span class="timeline-role">{e.role}</span>}
+                      <span class="timeline-period">{e.period}</span>
+                    </div>
+                    <p class="timeline-desc" title={e.desc}>
+                      {e.desc}
+                    </p>
+                    {e.tags?.length ? (
+                      <div class="timeline-tags">
+                        {e.tags.map((t) => (
+                          <span class="timeline-tag">{t}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div class="timeline-axis-cell" aria-hidden="true">
+                    <span class="timeline-bar" style={`--l:${e.left}%;--w:${e.width}%`} />
+                  </div>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+      </div>
+
+      {experience.note && <p class="timeline-note">{experience.note}</p>}
+    </section>
+  </div>
+</Base>

@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro';
+import SectionLabel from '../components/SectionLabel.astro';
+import { content } from '../lib/content.js';
+
+const { friends } = content;
+---
+
+<Base title="友情链接 · Peter267" description="Peter267 常去的站点与朋友们的主页。" pageName="friends">
+  <div class="page container">
+    <section class="friend-section" id="friends">
+      <SectionLabel name="FRIENDS" />
+      <h1 class="section-title">{friends.title}</h1>
+      <p class="section-lead">{friends.lead}</p>
+
+      <div class="friend-grid">
+        {
+          friends.items.map((f) => (
+            <a class="friend-link" href={f.url} target="_blank" rel="noopener noreferrer">
+              {f.avatar && <img class="friend-avatar" src={f.avatar} alt="" loading="lazy" />}
+              <div class="friend-content">
+                <span class="friend-name">{f.name}</span>
+                <span class="friend-desc">{f.desc}</span>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</Base>

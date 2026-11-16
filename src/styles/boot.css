@@ -1,0 +1,92 @@
+/* ==========================================================================
+   boot.css — 启动页（结构与样式对齐 apanzinc.top）
+   --------------------------------------------------------------------------
+   从 index.html 的内联 <style id="loading-styles"> 迁移而来。
+   独立成文件是为了让 Astro 能正常打包，同时保持"尽早生效"（放 head）。
+   ========================================================================== */
+
+#boot {
+  --boot-bg: #000;
+  --boot-accent: #00ff88;
+  --boot-accent-dim: rgba(0, 255, 136, 0.4);
+  --boot-track: #1a1a1a;
+
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--boot-bg);
+  overflow: hidden;
+}
+
+[data-theme="light"] #boot {
+  --boot-bg: #f8f8f8;
+  --boot-accent: #00875a;
+  --boot-accent-dim: rgba(0, 135, 90, 0.4);
+  --boot-track: #e0e0e0;
+}
+
+#boot.is-done {
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--boot-accent);
+  user-select: none;
+}
+
+.boot-logo {
+  height: clamp(40px, 7vw, 56px);
+  width: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: block;
+  opacity: 0;
+  filter: blur(6px);
+  box-shadow: 0 0 0 1px var(--boot-accent-dim), 0 0 32px -6px var(--boot-accent);
+  animation: boot-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+@keyframes boot-reveal {
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.boot-bar-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--boot-track);
+}
+
+.boot-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--boot-accent);
+  box-shadow: 0 0 16px var(--boot-accent-dim);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-logo {
+    animation: none;
+    opacity: 1;
+    filter: none;
+  }
+  .boot-bar,
+  #boot.is-done {
+    transition: none;
+  }
+}

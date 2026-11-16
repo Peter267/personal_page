@@ -1,0 +1,18 @@
+---
+/**
+ * SectionLabel.astro — 原站的字标矢量图
+ * ----------------------------------------------------------------------------
+ * 这些是逐字形提取的 SVG 路径（labels.js 里 37KB），不是字体渲染的文本。
+ * 必须用 set:html 注入，否则 Houdini 会把 SVG 当成字符串转义掉。
+ */
+import { sectionLabels } from '../lib/labels.js';
+
+interface Props {
+  name: keyof typeof sectionLabels;
+}
+
+const { name } = Astro.props;
+const svg = sectionLabels[name] || '';
+---
+
+<div class="section-label" set:html={svg} />

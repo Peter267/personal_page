@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import SectionLabel from '../components/SectionLabel.astro';
+import { content } from '../lib/content.js';
+
+const { achievements } = content;
+---
+
+<Base title="奖项 · Peter267" description="Peter267 的成就与开源贡献记录。" pageName="achievements">
+  <div class="page container">
+    <section class="achievement-section" id="achievements">
+      <SectionLabel name="ACHIEVEMENTS" />
+      <h1 class="section-title">{achievements.title}</h1>
+      <p class="section-lead">{achievements.lead}</p>
+
+      <div class="achievement-list">
+        {
+          achievements.items.map((a) => (
+            <div class="achievement-item">
+              <div class="achievement-marker">
+                <span class="marker-arrow" aria-hidden="true">
+                  →
+                </span>
+              </div>
+              <div class="achievement-content">
+                <h3 class="achievement-title">{a.title}</h3>
+                <p class="achievement-desc">{a.description}</p>
+                <div class="achievement-meta">
+                  <span class="achievement-date">{a.date}</span>
+                  {(a.tags || []).map((t) => (
+                    <span class="achievement-tag">{t}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      {achievements.note && <p class="achievement-note">{achievements.note}</p>}
+    </section>
+  </div>
+</Base>

@@ -1,0 +1,290 @@
+---
+/**
+ * Base.astro — 全站外壳
+ * ============================================================================
+ * 从原 index.html 迁移而来，职责不变：
+ *   启动页 / navbar / 移动端菜单 / footer / 主题初始化
+ *
+ * 与原版的差异（都是重构带来的必要改动）：
+ *   1. 每页可以有独立的 <title> / description / canonical（原来全站共用一个）
+ *   2. 用 <ClientRouter /> 实现静态 MPA 下的 SPA 般切换
+ *   3. 主题初始化改为 is:inline，避免闪烁
+ */
+import { ClientRouter } from 'astro:transitions';
+import { content, routes, currentYear } from '../lib/content.js';
+import '../styles/boot.css';
+import '../styles/index.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** 页面名称，用于导航高亮与页脚文案；'home' 表示首页 */
+  pageName?: string;
+}
+
+const {
+  title,
+  description = '一名学生、独立开发者、博主。从折腾到创造，无限进步。',
+  pageName = 'home',
+} = Astro.props;
+
+const site = content.site;
+const footer = content.footer;
+
+const pageTitle =
+  pageName === 'home' ? `${site.brand} · ${site.title}` : title;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+
+// 页脚右侧说明：首页显示服务说明，子页面显示站名（沿用原站逻辑）
+const footerNote = pageName === 'home' ? footer.note || '' : site.brand;
+
+const yearText =
+  footer.since && footer.since < currentYear
+    ? `${footer.since}-${currentYear}`
+    : String(currentYear);
+---
+
+<!doctype html>
+<html lang={site.lang} data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={site.brand} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark light" />
+
+    <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png" />
+
+    <!-- MiSans 字体预连接（详见 base.css 的说明） -->
+    <link rel="dns-prefetch" href="//cdn-font.hyperos.mi.com" />
+    <link rel="preconnect" href="https://cdn-font.hyperos.mi.com" crossorigin />
+    <link rel="dns-prefetch" href="//cdn-file.hyperos.mi.com" />
+    <link rel="preconnect" href="https://cdn-file.hyperos.mi.com" crossorigin />
+
+    <ClientRouter />
+
+    <!-- 主题初始化必须内联且尽早执行，否则会闪一下深色再切浅色 -->
+    <script is:inline>
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : dark
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+        document.documentElement.classList.remove('no-js');
+        document.documentElement.classList.add('js');
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- 启动页 -->
+    <div
+      id="boot"
+      role="progressbar"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      aria-label="页面加载中"
+    >
+      <div class="boot-brand" aria-hidden="true">
+        <img
+          class="boot-logo"
+          src="/assets/img/avatar-96.webp"
+          alt=""
+          width="56"
+          height="56"
+        />
+      </div>
+      <div class="boot-bar-wrap" aria-hidden="true">
+        <div class="boot-bar" id="boot-bar"></div>
+      </div>
+    </div>
+
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <div id="app">
+      <header class="navbar" id="navbar">
+        <div class="container">
+          <div class="navbar-content">
+            <div class="navbar-left">
+              <a class="navbar-logo" href="/" aria-label="返回首页">
+                <img
+                  class="navbar-avatar"
+                  src="/assets/img/avatar-96.webp"
+                  alt={site.brand}
+                  width="30"
+                  height="30"
+                />
+              </a>
+            </div>
+
+            <div class="navbar-right">
+              <nav class="navbar-links" id="navbar-links" aria-label="主导航">
+                {
+                  routes.map((r) => (
+                    <a
+                      class:list={['nav-link', { 'nav-link-active': r.name === pageName }]}
+                      href={r.path}
+                      aria-current={r.name === pageName ? 'page' : undefined}
+                    >
+                      {r.label}
+                    </a>
+                  ))
+                }
+              </nav>
+
+              <button
+                class="theme-toggle"
+                type="button"
+                id="theme-toggle"
+                aria-label="切换到浅色模式"
+              >
+                <span class="theme-icon" id="theme-icon">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                  </svg>
+                </span>
+              </button>
+
+              <button
+                class="menu-toggle"
+                type="button"
+                id="menu-toggle"
+                aria-label="打开菜单"
+                aria-expanded="false"
+                aria-controls="mobile-menu"
+              >
+                <span class="menu-icon" id="menu-icon">
+                  <span></span><span></span><span></span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+        <nav class="mobile-menu-content" aria-label="移动端导航">
+          {
+            routes.map((r, i) => (
+              <a
+                class:list={[
+                  'mobile-nav-link',
+                  { 'nav-link-active': r.name === pageName },
+                ]}
+                href={r.path}
+                style={`--i:${i};--total:${routes.length}`}
+                aria-current={r.name === pageName ? 'page' : undefined}
+              >
+                {r.label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+
+      <main id="main-content">
+        <slot />
+      </main>
+
+      <footer class="footer" id="footer">
+        <div class="footer-content">
+          <div class="footer-left">
+            <span class="footer-year">{yearText}</span>
+            <span class="footer-credit">
+              界面设计参考
+              <a
+                href="http://apanzinc.top/"
+                target="_blank"
+                rel="noopener noreferrer">apanzinc</a
+              >
+            </span>
+          </div>
+          <div class="footer-right">
+            {
+              footer.icp && (
+                <a id="footer-icp" href={footer.icpUrl || '#'} target="_blank" rel="noopener">
+                  {footer.icp}
+                </a>
+              )
+            }
+            {
+              footer.icp && (
+                <span class="footer-divider footer-divider-main" id="footer-divider">
+                  |
+                </span>
+              )
+            }
+            <span id="footer-note">{footerNote}</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      import { initBoot, teardownBoot } from '../lib/boot.js';
+      import { bindSiteInteractions, syncPageState } from '../lib/site.js';
+
+      initBoot();
+      bindSiteInteractions();
+
+      // 首次加载后，把启动页标记为"已完成"，换页时不再重播
+      let bootConsumed = false;
+      document.addEventListener('astro:after-swap', () => {
+        /**
+         * 关键修复：ClientRouter 换页会重建整个 <body>，
+         * 于是 #boot 会随新页面 HTML 一起被插回来。
+         * 首次加载时的进度条已经用过了，这里必须直接抹掉，
+         * 否则会留下一个 z-index:99999 的黑遮罩盖住整页。
+         */
+        if (bootConsumed) teardownBoot();
+      });
+
+      document.addEventListener('astro:page-load', () => {
+        bootConsumed = true;
+        syncPageState();
+      });
+
+      // ClientRouter 下模块脚本只执行一次，每次换页都要重新同步 DOM 状态
+      syncPageState();
+    </script>
+  </body>
+</html>

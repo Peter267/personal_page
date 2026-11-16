@@ -1,0 +1,110 @@
+---
+import Base from '../layouts/Base.astro';
+import { content } from '../lib/content.js';
+import { logoSvg } from '../lib/logo.js';
+
+const { hero } = content;
+---
+
+<Base title="Peter267 · 无限进步" pageName="home">
+  <div class="page home-page">
+    <section class="hero">
+      <div class="hero-shader" id="hero-shader" aria-hidden="true"></div>
+      <div class="hero-veil" aria-hidden="true"></div>
+
+      <div class="hero-content">
+        <div class="intro-left">
+          <div
+            class="hero-logo"
+            id="hero-logo"
+            role="img"
+            aria-label={hero.name}
+            set:html={logoSvg}
+          />
+        </div>
+
+        <div class="intro-right">
+          <p class="intro-bio" id="intro-bio">
+            {hero.bioLines.map((line) => <span class="bio-line">{line}</span>)}
+          </p>
+          <div class="hero-chips" id="hero-chips">
+            {
+              hero.chips.map((c, i) => {
+                const label = typeof c === 'string' ? c : c.label;
+                const href = typeof c === 'string' ? '' : c.href;
+                return href ? (
+                  <a class="hero-chip" style={`--i:${i}`} href={href}>
+                    {label}
+                  </a>
+                ) : (
+                  <span class="hero-chip" style={`--i:${i}`}>
+                    {label}
+                  </span>
+                );
+              })
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Base>
+
+<script>
+  import { createBackground } from '../lib/shader.js';
+
+  /**
+   * WebGL 生命周期 —— 这是 Astro 迁移里最容易出错的地方。
+   *
+   * Astro 的模块脚本在 ClientRouter 下**只执行一次**，即使换页后 DOM 重建
+   * 也不会再跑。而首页的 canvas 每次回到首页都需要重新创建。
+   * 所以必须：
+   *   - astro:page-load   → 若当前页是首页（存在 #hero-shader）就重建
+   *   - astro:before-swap → 离开前销毁，避免 WebGL 上下文泄漏
+   *     （浏览器对同时存在的上下文有上限，常见 16 个，泄漏会导致
+   *      切几次之后再也不显示 —— 也是一类"纹理不见了"）
+   */
+  let bg = null;
+
+  function destroyBg() {
+    if (bg) {
+      bg.destroy?.();
+      bg = null;
+    }
+    // 兜底：清掉可能残留的画布
+    const host = document.getElementById('hero-shader');
+    if (host) {
+      host.querySelectorAll('canvas').forEach((c) => c.remove());
+      host.style.background = '';
+    }
+  }
+
+  function mountBg() {
+    const host = document.getElementById('hero-shader');
+    if (!host) return;
+
+    destroyBg();
+
+    const canvas = document.createElement('canvas');
+    host.appendChild(canvas);
+    bg = createBackground(canvas);
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById('intro-bio')?.classList.add('bio-visible');
+        document
+          .querySelectorAll('.hero-chip')
+          .forEach((chip, i) =>
+            setTimeout(() => chip.classList.add('chip-visible'), 380 + i * 70)
+          );
+      }, 120);
+    });
+  }
+
+  document.addEventListener('astro:page-load', mountBg);
+  document.addEventListener('astro:before-swap', destroyBg);
+
+  // 首屏：脚本执行时 DOM 已就绪，但 ClientRouter 也会派发 page-load，
+  // 这里直接挂一次，重复调用由 destroyBg 保证幂等。
+  mountBg();
+</script>

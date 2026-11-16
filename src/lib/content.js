@@ -312,13 +312,18 @@ export const content = {
    顺序逻辑：讲过去的（奖项 / 经历）→ 讲现在的（项目）→ 讲别人的（友链）
              → 联系我 → 文章。
    ============================================================================ */
+/* 路径统一带尾斜杠。
+   原因：build.format 默认是 'directory'，产物是 /projects/index.html，
+   规范 URL 就是 /projects/。若导航写成 /projects（无斜杠），
+   静态服务器会 301 到 /projects/，在 ClientRouter 下多一次跳转，
+   canonical 也会和实际地址不一致。 */
 export const routes = [
-  { path: '/achievements', label: '奖项', name: 'achievements' },
-  { path: '/experience', label: '经历', name: 'experience' },
-  { path: '/projects', label: '项目', name: 'projects' },
-  { path: '/friends', label: '友情链接', name: 'friends' },
-  { path: '/contact', label: '联系我', name: 'contact' },
-  { path: '/posts', label: '文章', name: 'posts' },
+  { path: '/achievements/', label: '奖项', name: 'achievements' },
+  { path: '/experience/', label: '经历', name: 'experience' },
+  { path: '/projects/', label: '项目', name: 'projects' },
+  { path: '/friends/', label: '友情链接', name: 'friends' },
+  { path: '/contact/', label: '联系我', name: 'contact' },
+  { path: '/posts/', label: '文章', name: 'posts' },
 ];
 
 /** 当前年份，用于页脚年份区间 */

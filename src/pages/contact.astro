@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import SectionLabel from '../components/SectionLabel.astro';
+import { content } from '../lib/content.js';
+import { socialIcons } from '../lib/icons.js';
+
+const { contact } = content;
+---
+
+<Base title="联系我 · Peter267" description="Peter267 的公开联系方式与社交账号。" pageName="contact">
+  <div class="page container">
+    <section class="social-section" id="contact">
+      <SectionLabel name="CONTACT" />
+      <h1 class="section-title">{contact.title}</h1>
+      <p class="section-lead">{contact.lead}</p>
+
+      <div class="social-grid">
+        {
+          (contact.links || []).map((l) => (
+            <a class="social-link" href={l.url} target="_blank" rel="noopener noreferrer">
+              <span class="social-icon" set:html={socialIcons[l.icon] || ''} />
+              <div class="social-info">
+                <span class="social-name">{l.name}</span>
+                <span class="social-handle">{l.handle}</span>
+              </div>
+              <span class="social-arrow" aria-hidden="true">
+                ↗
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</Base>
